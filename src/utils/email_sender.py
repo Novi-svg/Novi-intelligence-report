@@ -257,26 +257,22 @@ class EmailSender:
             logger.error(f"Failed to send error notification: {e}")
     
     def validate_configuration(self):
-    """Validate email configuration"""
-    config_issues = []
-    
-    if not self.config.EMAIL_FROM:
-        config_issues.append("EMAIL_FROM environment variable not set")
-    
-    if not self.config.EMAIL_PASSWORD:
-        config_issues.append("EMAIL_PASSWORD environment variable not set")
-    
-    if not self.config.EMAIL_TO:
-        config_issues.append("EMAIL_TO environment variable not set")
-    
-    if self.config.EMAIL_FROM and '@gmail.com' not in self.config.EMAIL_FROM:
-        config_issues.append("EMAIL_FROM must be a Gmail address")
-    
-    # Fix: Handle Gmail app password with or without spaces
-    if self.config.EMAIL_PASSWORD:
-        # Remove spaces and check if it's 16 characters
-        clean_password = self.config.EMAIL_PASSWORD.replace(' ', '')
-        if len(clean_password) != 16:
-            config_issues.append("EMAIL_PASSWORD should be a 16-character Gmail app password (spaces will be ignored)")
-    
-    return config_issues
+        """Validate email configuration"""
+        config_issues = []
+        
+        if not self.config.EMAIL_FROM:
+            config_issues.append("EMAIL_FROM environment variable not set")
+        
+        if not self.config.EMAIL_PASSWORD:
+            config_issues.append("EMAIL_PASSWORD environment variable not set")
+        
+        if not self.config.EMAIL_TO:
+            config_issues.append("EMAIL_TO environment variable not set")
+        
+        if self.config.EMAIL_FROM and '@gmail.com' not in self.config.EMAIL_FROM:
+            config_issues.append("EMAIL_FROM must be a Gmail address")
+        
+        if self.config.EMAIL_PASSWORD and len(self.config.EMAIL_PASSWORD.replace(' ', '')) != 16:
+            config_issues.append("EMAIL_PASSWORD should be a 16-character Gmail app password")
+        
+        return config_issues
