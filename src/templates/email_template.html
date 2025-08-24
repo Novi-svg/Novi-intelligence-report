@@ -1,0 +1,1023 @@
+#### File 12: `src/templates/email_template.html`
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novi's Intelligence Report - {{ date }}</title>
+    <style>
+        /* Reset styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header .date-info {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .section {
+            padding: 30px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .section:last-child {
+            border-bottom: none;
+        }
+        
+        .section-title {
+            display: flex;
+            align-items: center;
+            font-size: 1.5em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .section-title .emoji {
+            margin-right: 12px;
+            font-size: 1.2em;
+        }
+        
+        .subsection {
+            margin-bottom: 25px;
+        }
+        
+        .subsection h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            border-left: 4px solid #007bff;
+            padding-left: 12px;
+        }
+        
+        /* News Items */
+        .news-item {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #007bff;
+            transition: transform 0.2s ease;
+        }
+        
+        .news-item:hover {
+            transform: translateY(-2px);
+        }
+        
+        .news-item h4 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        
+        .news-item h4 a {
+            color: #2c3e50;
+            text-decoration: none;
+        }
+        
+        .news-item h4 a:hover {
+            color: #007bff;
+        }
+        
+        .news-item p {
+            color: #6c757d;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .news-item .meta {
+            font-size: 0.85em;
+            color: #868e96;
+        }
+        
+        /* Stock Items */
+        .stock-item {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            padding: 20px;
+            margin-bottom: 12px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        
+        .stock-name {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+        
+        .stock-symbol {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        
+        .stock-price {
+            font-size: 1.2em;
+            font-weight: 700;
+        }
+        
+        .positive {
+            color: #28a745;
+        }
+        
+        .negative {
+            color: #dc3545;
+        }
+        
+        .stock-metrics {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .metric {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        
+        .score-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .score-high {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .score-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .score-low {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        /* Job Items */
+        .job-item {
+            background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
+            padding: 25px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .job-title {
+            color: #155724;
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        .job-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .job-detail {
+            font-size: 0.95em;
+        }
+        
+        .job-detail strong {
+            color: #2c3e50;
+        }
+        
+        .relevance-score {
+            float: right;
+            background: #28a745;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        /* SAP Section */
+        .sap-item {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .use-case-item {
+            background: #f8f9fa;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .use-case-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        
+        .complexity-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        .complexity-low { background: #d4edda; color: #155724; }
+        .complexity-medium { background: #fff3cd; color: #856404; }
+        .complexity-high { background: #f8d7da; color: #721c24; }
+        
+        .roi-info {
+            display: flex;
+            gap: 20px;
+            margin-top: 12px;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        
+        /* Career Section */
+        .career-timeline {
+            margin-bottom: 25px;
+        }
+        
+        .timeline-item {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #6f42c1;
+        }
+        
+        .timeline-period {
+            font-weight: 600;
+            color: #6f42c1;
+            margin-bottom: 10px;
+        }
+        
+        .skills-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .skill-tag {
+            background: #e9ecef;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            color: #495057;
+        }
+        
+        /* Investment Analysis */
+        .allocation-chart {
+            display: flex;
+            margin: 20px 0;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .allocation-segment {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        
+        .large-cap { background: #007bff; }
+        .mid-cap { background: #28a745; }
+        .small-cap { background: #ffc107; color: #212529; }
+        .flexi-cap { background: #6f42c1; }
+        
+        /* Footer */
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        .footer-content {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .generation-time {
+            margin-top: 10px;
+            font-size: 0.85em;
+            opacity: 0.7;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .section {
+                padding: 20px;
+            }
+            
+            .stock-metrics {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .job-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .allocation-chart {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .allocation-segment {
+                padding: 8px;
+                margin-bottom: 2px;
+            }
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .news-item {
+                background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+                color: #f8f9fa;
+            }
+            
+            .stock-item {
+                background: #343a40;
+                border-color: #495057;
+                color: #f8f9fa;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📊 Novi's Intelligence Report</h1>
+            <div class="date-info">
+                {{ date }} • {{ day }}<br>
+                <small>Generated at {{ time }}</small>
+            </div>
+        </div>
+
+        <!-- News Section -->
+        {% if news %}
+        <div class="section">
+            <div class="section-title">
+                <span class="emoji">📈</span>News Updates
+            </div>
+            
+            <!-- Global News -->
+            {% if news.global %}
+            <div class="subsection">
+                <h3>🌍 Global News</h3>
+                {% for item in news.global %}
+                <div class="news-item">
+                    <h4><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></h4>
+                    <p>{{ item.description }}</p>
+                    <div class="meta">Source: {{ item.source }} • {{ item.published }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- India News -->
+            {% if news.india %}
+            <div class="subsection">
+                <h3>🇮🇳 India News</h3>
+                {% for item in news.india %}
+                <div class="news-item">
+                    <h4><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></h4>
+                    <p>{{ item.description }}</p>
+                    <div class="meta">Source: {{ item.source }} • {{ item.published }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Regional News -->
+            {% if news.regional %}
+            <div class="subsection">
+                <h3>🏢 Regional News (AP & Bangalore)</h3>
+                {% for item in news.regional %}
+                <div class="news-item">
+                    <h4><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></h4>
+                    <p>{{ item.description }}</p>
+                    <div class="meta">Source: {{ item.source }} • {{ item.published }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Stock Market Section -->
+        {% if stocks %}
+        <div class="section">
+            <div class="section-title">
+                <span class="emoji">📉</span>Stock Market Analysis
+            </div>
+            
+            <!-- Large Cap Stocks -->
+            {% if stocks.large_cap %}
+            <div class="subsection">
+                <h3>🏛️ Large Cap Stocks (Top {{ stocks.large_cap|length }})</h3>
+                {% for stock in stocks.large_cap %}
+                <div class="stock-item">
+                    <div class="stock-header">
+                        <div>
+                            <div class="stock-name">{{ stock.name }}</div>
+                            <div class="stock-symbol">({{ stock.symbol }})</div>
+                        </div>
+                        <div class="stock-price {{ 'positive' if stock.change >= 0 else 'negative' }}">
+                            ₹{{ stock.current_price }}
+                            <span class="score-badge {{ 'score-high' if stock.overall_score >= 7 else 'score-medium' if stock.overall_score >= 5 else 'score-low' }}">
+                                Score: {{ stock.overall_score }}/10
+                            </span>
+                        </div>
+                    </div>
+                    <div class="stock-metrics">
+                        <div class="metric">
+                            Change: <span class="{{ 'positive' if stock.change >= 0 else 'negative' }}">
+                                {{ '+' if stock.change >= 0 else '' }}{{ stock.change }} ({{ stock.change_percent }}%)
+                            </span>
+                        </div>
+                        <div class="metric">PE: {{ stock.pe_ratio }}</div>
+                        <div class="metric">Recommendation: <strong>{{ stock.recommendation }}</strong></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Mid Cap Stocks -->
+            {% if stocks.mid_cap %}
+            <div class="subsection">
+                <h3>🏢 Mid Cap Stocks (Top {{ stocks.mid_cap|length }})</h3>
+                {% for stock in stocks.mid_cap %}
+                <div class="stock-item">
+                    <div class="stock-header">
+                        <div>
+                            <div class="stock-name">{{ stock.name }}</div>
+                            <div class="stock-symbol">({{ stock.symbol }})</div>
+                        </div>
+                        <div class="stock-price {{ 'positive' if stock.change >= 0 else 'negative' }}">
+                            ₹{{ stock.current_price }}
+                            <span class="score-badge {{ 'score-high' if stock.overall_score >= 7 else 'score-medium' if stock.overall_score >= 5 else 'score-low' }}">
+                                Score: {{ stock.overall_score }}/10
+                            </span>
+                        </div>
+                    </div>
+                    <div class="stock-metrics">
+                        <div class="metric">
+                            Change: <span class="{{ 'positive' if stock.change >= 0 else 'negative' }}">
+                                {{ '+' if stock.change >= 0 else '' }}{{ stock.change }} ({{ stock.change_percent }}%)
+                            </span>
+                        </div>
+                        <div class="metric">PE: {{ stock.pe_ratio }}</div>
+                        <div class="metric">Recommendation: <strong>{{ stock.recommendation }}</strong></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Small Cap Stocks -->
+            {% if stocks.small_cap %}
+            <div class="subsection">
+                <h3>🏬 Small Cap Stocks (Top {{ stocks.small_cap|length }})</h3>
+                {% for stock in stocks.small_cap %}
+                <div class="stock-item">
+                    <div class="stock-header">
+                        <div>
+                            <div class="stock-name">{{ stock.name }}</div>
+                            <div class="stock-symbol">({{ stock.symbol }})</div>
+                        </div>
+                        <div class="stock-price {{ 'positive' if stock.change >= 0 else 'negative' }}">
+                            ₹{{ stock.current_price }}
+                            <span class="score-badge {{ 'score-high' if stock.overall_score >= 7 else 'score-medium' if stock.overall_score >= 5 else 'score-low' }}">
+                                Score: {{ stock.overall_score }}/10
+                            </span>
+                        </div>
+                    </div>
+                    <div class="stock-metrics">
+                        <div class="metric">
+                            Change: <span class="{{ 'positive' if stock.change >= 0 else 'negative' }}">
+                                {{ '+' if stock.change >= 0 else '' }}{{ stock.change }} ({{ stock.change_percent }}%)
+                            </span>
+                        </div>
+                        <div class="metric">PE: {{ stock.pe_ratio }}</div>
+                        <div class="metric">Recommendation: <strong>{{ stock.recommendation }}</strong></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Market Analysis -->
+            {% if stocks.analysis %}
+            <div class="subsection">
+                <h3>📊 Market Analysis</h3>
+                <div class="news-item">
+                    <h4>Market Sentiment: {{ stocks.analysis.sentiment }}</h4>
+                    <p>{{ stocks.analysis.positive_stocks }} out of {{ stocks.analysis.total_stocks }} stocks showing positive movement</p>
+                    <p><strong>Trend:</strong> {{ stocks.analysis.market_trend }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Mutual Funds Section -->
+        {% if mutual_funds %}
+        <div class="section">
+            <div class="section-title">
+                <span class="emoji">🏆</span>Mutual Fund Recommendations
+            </div>
+            
+            <!-- Large Cap Funds -->
+            {% if mutual_funds.large_cap %}
+            <div class="subsection">
+                <h3>🏛️ Large Cap Funds (Top 2)</h3>
+                {% for fund in mutual_funds.large_cap %}
+                <div class="stock-item">
+                    <div class="stock-header">
+                        <div class="stock-name">{{ fund.name }}</div>
+                        <div class="stock-price positive">
+                            NAV: ₹{{ fund.nav }}
+                        </div>
+                    </div>
+                    <div class="stock-metrics">
+                        <div class="metric">1Y Returns: <strong>{{ fund.returns_1y }}</strong></div>
+                        <div class="metric">Category Rank: <strong>#{{ fund.category_rank }}</strong></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Mid Cap Funds -->
+            {% if mutual_funds.mid_cap %}
+            <div class="subsection">
+                <h3>🏢 Mid Cap Funds (Top 2)</h3>
+                {% for fund in mutual_funds.mid_cap %}
+                <div class="stock-item">
+                    <div class="stock-header">
+                        <div class="stock-name">{{ fund.name }}</div>
+                        <div class="stock-price positive">
+                            NAV: ₹{{ fund.nav }}
+                        </div>
+                    </div>
+                    <div class="stock-metrics">
+                        <div class="metric">1Y Returns: <strong>{{ fund.returns_1y }}</strong></div>
+                        <div class="metric">Category Rank: <strong>#{{ fund.category_rank }}</strong></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Small Cap Funds -->
+            {% if mutual_funds.small_cap %}
+            <div class="subsection">
+                <h3>🏬 Small Cap Funds (Top 2)</h3>
+                {% for fund in mutual_funds.small_cap %}
+                <div class="stock-item">
+                    <div class="stock-header">
+                        <div class="stock-name">{{ fund.name }}</div>
+                        <div class="stock-price positive">
+                            NAV: ₹{{ fund.nav }}
+                        </div>
+                    </div>
+                    <div class="stock-metrics">
+                        <div class="metric">1Y Returns: <strong>{{ fund.returns_1y }}</strong></div>
+                        <div class="metric">Category Rank: <strong>#{{ fund.category_rank }}</strong></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Flexi Cap Funds -->
+            {% if mutual_funds.flexi_cap %}
+            <div class="subsection">
+                <h3>🔄 Flexi Cap Funds (Top 2)</h3>
+                {% for fund in mutual_funds.flexi_cap %}
+                <div class="stock-item">
+                    <div class="stock-header">
+                        <div class="stock-name">{{ fund.name }}</div>
+                        <div class="stock-price positive">
+                            NAV: ₹{{ fund.nav }}
+                        </div>
+                    </div>
+                    <div class="stock-metrics">
+                        <div class="metric">1Y Returns: <strong>{{ fund.returns_1y }}</strong></div>
+                        <div class="metric">Category Rank: <strong>#{{ fund.category_rank }}</strong></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Investment Analysis Section -->
+        {% if investment_analysis %}
+        <div class="section">
+            <div class="section-title">
+                <span class="emoji">🧮</span>Investment Analysis
+            </div>
+            
+            <!-- 5-Year Allocation Strategy -->
+            {% if investment_analysis.allocation_strategy %}
+            <div class="subsection">
+                <h3>📊 Recommended 5-Year Allocation Strategy</h3>
+                <div class="allocation-chart">
+                    <div class="allocation-segment large-cap" style="width: {{ investment_analysis.allocation_strategy.large_cap }}%;">
+                        Large Cap {{ investment_analysis.allocation_strategy.large_cap }}%
+                    </div>
+                    <div class="allocation-segment mid-cap" style="width: {{ investment_analysis.allocation_strategy.mid_cap }}%;">
+                        Mid Cap {{ investment_analysis.allocation_strategy.mid_cap }}%
+                    </div>
+                    <div class="allocation-segment small-cap" style="width: {{ investment_analysis.allocation_strategy.small_cap }}%;">
+                        Small Cap {{ investment_analysis.allocation_strategy.small_cap }}%
+                    </div>
+                    <div class="allocation-segment flexi-cap" style="width: {{ investment_analysis.allocation_strategy.flexi_cap }}%;">
+                        Flexi Cap {{ investment_analysis.allocation_strategy.flexi_cap }}%
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Market Outlook -->
+            {% if investment_analysis.market_outlook %}
+            <div class="subsection">
+                <h3>🔮 Market Outlook (2025-2030)</h3>
+                <div class="news-item">
+                    <p>{{ investment_analysis.market_outlook.summary }}</p>
+                    <div style="margin-top: 15px;">
+                        <strong>Key Investment Themes:</strong>
+                        <div class="skills-list" style="margin-top: 8px;">
+                            {% for theme in investment_analysis.market_outlook.key_themes %}
+                            <span class="skill-tag">{{ theme }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% if investment_analysis.market_outlook.risks %}
+                    <div style="margin-top: 15px;">
+                        <strong>Risk Factors:</strong>
+                        <ul style="margin-top: 8px; margin-left: 20px;">
+                            {% for risk in investment_analysis.market_outlook.risks %}
+                            <li>{{ risk }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Top Investment Picks -->
+            {% if investment_analysis.top_picks %}
+            <div class="subsection">
+                <h3>🎯 Long-term Investment Opportunities</h3>
+                {% for pick in investment_analysis.top_picks %}
+                <div class="news-item">
+                    <h4>{{ pick.sector }}</h4>
+                    <p>{{ pick.reason }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Jobs Section -->
+        {% if jobs %}
+        <div class="section">
+            <div class="section-title">
+                <span class="emoji">🎯</span>SAP Job Opportunities
+            </div>
+            
+            {% for job in jobs[:10] %}
+            <div class="job-item">
+                <div class="job-title">
+                    {{ job.title }}
+                    {% if job.relevance_score %}
+                    <span class="relevance-score">Relevance: {{ job.relevance_score }}/10</span>
+                    {% endif %}
+                </div>
+                <div class="job-details">
+                    <div class="job-detail"><strong>Company:</strong> {{ job.company }}</div>
+                    <div class="job-detail"><strong>Location:</strong> {{ job.location }}</div>
+                    <div class="job-detail"><strong>Package:</strong> {{ job.package }}</div>
+                    <div class="job-detail"><strong>Experience:</strong> {{ job.experience }}</div>
+                </div>
+                <div class="job-detail"><strong>Requirements:</strong> {{ job.requirements }}</div>
+                <p>{{ job.description }}</p>
+                <div class="meta">Source: {{ job.source }} • Posted: {{ job.posted_date }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- SAP Weekly Insights (Saturday only) -->
+        {% if sap %}
+        <div class="section">
+            <div class="section-title">
+                <span class="emoji">💼</span>SAP Weekly Insights
+            </div>
+            
+            <!-- SAP News -->
+            {% if sap.news %}
+            <div class="subsection">
+                <h3>📰 SAP News & Updates</h3>
+                {% for news in sap.news %}
+                <div class="sap-item">
+                    <h4>{{ news.title }}</h4>
+                    <p>{{ news.summary }}</p>
+                    <div class="roi-info">
+                        <div><strong>Category:</strong> {{ news.category }}</div>
+                        <div><strong>Relevance:</strong> {{ news.relevance }}</div>
+                        <div><strong>Impact:</strong> {{ news.impact }}</div>
+                    </div>
+                    <div class="meta" style="margin-top: 10px;">
+                        <a href="{{ news.url }}" target="_blank">Read More</a> • {{ news.date }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- AI Use Cases -->
+            {% if sap.use_cases %}
+            <div class="subsection">
+                <h3>🤖 AI Use Cases in SAP Finance</h3>
+                {% for use_case in sap.use_cases %}
+                <div class="use-case-item">
+                    <div class="use-case-header">
+                        <h4>{{ use_case.title }}</h4>
+                        <span class="complexity-badge complexity-{{ use_case.implementation_complexity.lower() }}">
+                            {{ use_case.implementation_complexity }} Complexity
+                        </span>
+                    </div>
+                    <p>{{ use_case.description }}</p>
+                    <div class="roi-info">
+                        <div><strong>ROI Timeline:</strong> {{ use_case.roi_timeline }}</div>
+                        <div><strong>Business Impact:</strong> {{ use_case.business_impact }}</div>
+                        <div><strong>Best For:</strong> {{ use_case.recommended_for }}</div>
+                    </div>
+                    <div style="margin-top: 12px;">
+                        <strong>Technical Requirements:</strong>
+                        <div class="skills-list" style="margin-top: 8px;">
+                            {% for req in use_case.technical_requirements %}
+                            <span class="skill-tag">{{ req }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Product Updates -->
+            {% if sap.product_updates %}
+            <div class="subsection">
+                <h3>🔄 Product Updates</h3>
+                {% for update in sap.product_updates %}
+                <div class="sap-item">
+                    <h4>{{ update.product }} ({{ update.version }})</h4>
+                    <div style="margin-top: 10px;">
+                        <strong>Key Features:</strong>
+                        <ul style="margin-top: 8px; margin-left: 20px;">
+                            {% for feature in update.key_features %}
+                            <li>{{ feature }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div style="margin-top: 12px;">
+                        <strong>Finance Impact:</strong> {{ update.finance_impact }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Market Trends -->
+            {% if sap.trends %}
+            <div class="subsection">
+                <h3>📈 SAP Market Trends</h3>
+                {% for trend in sap.trends %}
+                <div class="sap-item">
+                    <h4>{{ trend.trend }}</h4>
+                    <p>{{ trend.description }}</p>
+                    <div class="roi-info">
+                        <div><strong>Timeline:</strong> {{ trend.timeline }}</div>
+                        <div><strong>Impact on Roles:</strong> {{ trend.impact_on_roles }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Career Analysis Section (Bi-weekly: Saturday & Monday) -->
+        {% if career %}
+        <div class="section">
+            <div class="section-title">
+                <span class="emoji">🔄</span>Career Analysis & Future Opportunities
+            </div>
+            
+            <!-- Future Skills -->
+            {% if career.future_skills %}
+            <div class="subsection">
+                <h3>🚀 Future Skills by Field (2025-2040)</h3>
+                {% for field, timelines in career.future_skills.items() %}
+                <div class="career-timeline">
+                    <h4 style="color: #6f42c1; margin-bottom: 15px;">{{ field }}</h4>
+                    {% for timeline, skills in timelines.items() %}
+                    <div class="timeline-item">
+                        <div class="timeline-period">{{ timeline }}</div>
+                        <div class="skills-list">
+                            {% for skill in skills %}
+                            <span class="skill-tag">{{ skill }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Emerging Fields -->
+            {% if career.emerging_fields %}
+            <div class="subsection">
+                <h3>🌟 Emerging Career Fields</h3>
+                {% for field in career.emerging_fields %}
+                <div class="use-case-item">
+                    <div class="use-case-header">
+                        <h4>{{ field.field }}</h4>
+                        <span class="complexity-badge score-high">{{ field.growth_potential }}</span>
+                    </div>
+                    <div class="roi-info">
+                        <div><strong>Mainstream Timeline:</strong> {{ field.time_to_mainstream }}</div>
+                        <div><strong>Background Needed:</strong> {{ field.required_background }}</div>
+                    </div>
+                    <p style="margin-top: 10px;"><strong>Key Opportunities:</strong> {{ field.opportunities }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Market Predictions -->
+            {% if career.market_predictions %}
+            <div class="subsection">
+                <h3>🔮 Market Predictions</h3>
+                {% for period, prediction in career.market_predictions.items() %}
+                <div class="timeline-item">
+                    <div class="timeline-period">{{ period }}</div>
+                    <div style="margin-bottom: 10px;">
+                        <strong>Hot Sectors:</strong>
+                        <div class="skills-list" style="margin-top: 5px;">
+                            {% for sector in prediction.hot_sectors %}
+                            <span class="skill-tag" style="background: #d4edda; color: #155724;">{{ sector }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <strong>Declining Sectors:</strong>
+                        <div class="skills-list" style="margin-top: 5px;">
+                            {% for sector in prediction.declining_sectors %}
+                            <span class="skill-tag" style="background: #f8d7da; color: #721c24;">{{ sector }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div>
+                        <strong>Key Skill Gaps:</strong>
+                        <div class="skills-list" style="margin-top: 5px;">
+                            {% for gap in prediction.skill_gaps %}
+                            <span class="skill-tag" style="background: #fff3cd; color: #856404;">{{ gap }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Personalized Recommendations -->
+            {% if career.recommendations %}
+            <div class="subsection">
+                <h3>💡 Personalized Career Recommendations</h3>
+                {% for rec in career.recommendations %}
+                <div class="sap-item">
+                    <h4>{{ rec.timeline }}</h4>
+                    <p><strong>Focus:</strong> {{ rec.focus }}</p>
+                    <div style="margin-top: 12px;">
+                        <strong>Specific Actions:</strong>
+                        <ul style="margin-top: 8px; margin-left: 20px;">
+                            {% for action in rec.specific_actions %}
+                            <li>{{ action }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-content">
+                <div style="font-size: 1.1em; margin-bottom: 10px;">
+                    ✅ <strong>Report Generated Successfully</strong>
+                </div>
+                <div>
+                    🤖 Powered by Novi's Intelligence System<br>
+                    📧 Daily delivery at 5:00 AM IST<br>
+                    🔄 Automated via GitHub Actions
+                </div>
+                <div class="generation-time">
+                    Generated on {{ date }} at {{ time }}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
