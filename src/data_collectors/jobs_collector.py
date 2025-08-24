@@ -445,10 +445,7 @@ class JobsCollector:
         
         # Sort by demand
         demanded_skills = sorted(skill_keywords.items(), key=lambda x: x[1], reverse=True)
-        return [{'skill': skill, 'demand_count': count} for skill, count in demanded_skills if count > 0] 'Naukri.com',
-                'posted_date': datetime.now().strftime('%Y-%m-%d'),
-                'relevance_score': 0  # Will be calculated later
-            }
+        return [{'skill': skill, 'demand_count': count} for skill, count in demanded_skills if count > 0]
             
         except Exception as e:
             logger.warning(f"Error extracting Naukri job data: {e}")
