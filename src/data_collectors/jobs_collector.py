@@ -206,7 +206,113 @@ class JobsCollector:
         except Exception as e:
             logger.warning(f"Error extracting Naukri job data: {e}")
             return None
-
+    
+    def _extract_indeed_job_data(self, card, base_url):
+        """Extract job data from Indeed job card"""
+        try:
+            # Title
+            title_elem = card.find(['h2', 'a'], attrs={'data-testid': 'job-title'})
+            if not title_elem:
+                title_elem = card.find(['h2', 'a'])
+            
+            title = title_elem.get_text(strip=True) if title_elem else "SAP Consultant"
+            
+            # Company
+            company_elem = card.find(['span', 'div'], attrs={'data-testid': 'company-name'})
+            if not company_elem:
+                company_elem = card.find(['span'], class_=re.compile(r'company'))
+            company = company_elem.get_text(strip=True) if company_elem else "Consulting Firm"
+            
+            # Location
+            location_elem = card.find(['div'], attrs={'data-testid': 'job-location'})
+            if not location_elem:
+                location_elem = card.find(['div', 'span'], class_=re.compile(r'location'))
+            location = location_elem.get_text(strip=True) if location_elem else "Mumbai, India"
+            
+            # URL
+            job_key = card.get('data-jk', '')
+            url = f"{base_url}/viewjob?jk={job_key}" if job_key else base_url
+            
+            return {
+                'title': self._clean_text(title),
+                'company': self._clean_text(company),
+                'location': self._clean_text(location),
+                'package': "18-30 LPA",  # Default estimate
+                'experience': "6-10 years",
+                'requirements': 'SAP S/4HANA, project management, business analysis',
+                'description': f'Senior SAP role with {company}',
+                'url': url,
+                'source': 'Indeed.com',
+                'posted_date': datetime.now().strftime('%Y-%m-%d'),
+                'relevance_score': 0
+            }
+            
+        except Exception as e:
+            logger.warning(f"Error extracting Indeed job data: {e}")
+            return None
+    
+    def _extract_timesjobs_data(self, card, base_url):
+        """Extract job data from TimesJobs"""
+        try:
+            # Title
+            title_elem = card.find(['h2', 'a'], class_=re.compile(r'title|job'))
+            title = title_elem.get_text(strip=True) if title_elem else "SAP Finance Lead"
+            
+            # Company
+            company_elem = card.find(['h3', 'div'], class_=re.compile(r'company'))
+            company = company_elem.get_text(strip=True) if company_elem else "Enterprise Solutions"
+            
+            # Location
+            location_elem = card.find(['ul', 'li'], class_=re.compile(r'location'))
+            location = location_elem.get_text(strip=True) if location_elem else "Bangalore, India"
+            
+            return {
+                'title': self._clean_text(title),
+                'company': self._clean_text(company),
+                'location': self._clean_text(location),
+                'package': "20-28 LPA",
+                'experience': "8-12 years",
+                'requirements': 'SAP FICO, S/4HANA, team management',
+                'description': f'Leadership role in SAP finance at {company}',
+                'url': base_url,
+                'source': 'TimesJobs.com',
+                'posted_date': datetime.now().strftime('%Y-%m-%d'),
+                'relevance_score': 0
+            }
+            
+        except Exception as e:
+            logger.warning(f"Error extracting TimesJobs data: {e}")
+            return None
+    
+    def _extract_shine_job_data(self, card, base_url):
+        """Extract job data from Shine.com"""
+        try:
+            # Title
+            title_elem = card.find(['a', 'h3'], class_=re.compile(r'title|job'))
+            title = title_elem.get_text(strip=True) if title_elem else "SAP Architect"
+            
+            # Company
+            company_elem = card.find(['div', 'span'], class_=re.compile(r'company'))
+            company = company_elem.get_text(strip=True) if company_elem else "Global Tech Solutions"
+            
+            return {
+                'title': self._clean_text(title),
+                'company': self._clean_text(company),
+                'location': "Hyderabad, India",
+                'package': "22-32 LPA",
+                'experience': "10+ years",
+                'requirements': 'SAP architecture, solution design, client management',
+                'description': f'Senior architect position at {company}',
+                'url': base_url,
+                'source': 'Shine.com',
+                'posted_date': datetime.now().strftime('%Y-%m-%d'),
+                'relevance_score': 0
+            }
+            
+        except Exception as e:
+            logger.warning(f"Error extracting Shine data: {e}")
+            return None
+    
     def _get_sample_sap_jobs(self):
         """Sample SAP jobs when scraping doesn't yield enough results"""
         sample_jobs = [
@@ -446,125 +552,3 @@ class JobsCollector:
         # Sort by demand
         demanded_skills = sorted(skill_keywords.items(), key=lambda x: x[1], reverse=True)
         return [{'skill': skill, 'demand_count': count} for skill, count in demanded_skills if count > 0]
-            
-      # END OF FILE - Nothing should come after this line
-    
-    def _extract_indeed_job_data(self, card, base_url):
-        """Extract job data from Indeed job card"""
-        try:
-            # Title
-            title_elem = card.find(['h2', 'a'], attrs={'data-testid': 'job-title'})
-            if not title_elem:
-                title_elem = card.find(['h2', 'a'])
-            
-            title = title_elem.get_text(strip=True) if title_elem else "SAP Consultant"
-            
-            # Company
-            company_elem = card.find(['span', 'div'], attrs={'data-testid': 'company-name'})
-            if not company_elem:
-                company_elem = card.find(['span'], class_=re.compile(r'company'))
-            company = company_elem.get_text(strip=True) if company_elem else "Consulting Firm"
-            
-            # Location
-            location_elem = card.find(['div'], attrs={'data-testid': 'job-location'})
-            if not location_elem:
-                location_elem = card.find(['div', 'span'], class_=re.compile(r'location'))
-            location = location_elem.get_text(strip=True) if location_elem else "Mumbai, India"
-            
-            # URL
-            job_key = card.get('data-jk', '')
-            url = f"{base_url}/viewjob?jk={job_key}" if job_key else base_url
-            
-            return {
-                'title': self._clean_text(title),
-                'company': self._clean_text(company),
-                'location': self._clean_text(location),
-                'package': "18-30 LPA",  # Default estimate
-                'experience': "6-10 years",
-                'requirements': 'SAP S/4HANA, project management, business analysis',
-                'description': f'Senior SAP role with {company}',
-                'url': url,
-                'source': 'Indeed.com',
-                'posted_date': datetime.now().strftime('%Y-%m-%d'),
-                'relevance_score': 0
-            }
-            
-        except Exception as e:
-            logger.warning(f"Error extracting Indeed job data: {e}")
-            return None
-    
-    def _extract_timesjobs_data(self, card, base_url):
-        """Extract job data from TimesJobs"""
-        try:
-            # Title
-            title_elem = card.find(['h2', 'a'], class_=re.compile(r'title|job'))
-            title = title_elem.get_text(strip=True) if title_elem else "SAP Finance Lead"
-            
-            # Company
-            company_elem = card.find(['h3', 'div'], class_=re.compile(r'company'))
-            company = company_elem.get_text(strip=True) if company_elem else "Enterprise Solutions"
-            
-            # Location
-            location_elem = card.find(['ul', 'li'], class_=re.compile(r'location'))
-            location = location_elem.get_text(strip=True) if location_elem else "Bangalore, India"
-            
-            return {
-                'title': self._clean_text(title),
-                'company': self._clean_text(company),
-                'location': self._clean_text(location),
-                'package': "20-28 LPA",
-                'experience': "8-12 years",
-                'requirements': 'SAP FICO, S/4HANA, team management',
-                'description': f'Leadership role in SAP finance at {company}',
-                'url': base_url,
-                'source': 'TimesJobs.com',
-                'posted_date': datetime.now().strftime('%Y-%m-%d'),
-                'relevance_score': 0
-            }
-            
-        except Exception as e:
-            logger.warning(f"Error extracting TimesJobs data: {e}")
-            return None
-    
-    def _extract_shine_job_data(self, card, base_url):
-        """Extract job data from Shine.com"""
-        try:
-            # Title
-            title_elem = card.find(['a', 'h3'], class_=re.compile(r'title|job'))
-            title = title_elem.get_text(strip=True) if title_elem else "SAP Architect"
-            
-            # Company
-            company_elem = card.find(['div', 'span'], class_=re.compile(r'company'))
-            company = company_elem.get_text(strip=True) if company_elem else "Global Tech Solutions"
-            
-            return {
-                'title': self._clean_text(title),
-                'company': self._clean_text(company),
-                'location': "Hyderabad, India",
-                'package': "22-32 LPA",
-                'experience': "10+ years",
-                'requirements': 'SAP architecture, solution design, client management',
-                'description': f'Senior architect position at {company}',
-                'url': base_url,
-                'source': 'Shine.com',
-                'posted_date': datetime.now().strftime('%Y-%m-%d'),
-                'relevance_score': 0
-            }
-            
-        except Exception as e:
-            logger.warning(f"Error extracting Shine data: {e}")
-            return None
-    
-    def _get_sample_sap_jobs(self):
-        """Sample SAP jobs when scraping doesn't yield enough results"""
-        sample_jobs = [
-            {
-                'title': 'SAP Finance Transformation Lead',
-                'company': 'Deloitte Consulting',
-                'location': 'Mumbai, India',
-                'package': '28-35 LPA',
-                'experience': '10-15 years',
-                'requirements': 'SAP S/4HANA Finance, program management, client-facing experience',
-                'description': 'Lead large-scale SAP finance transformation programs for Fortune 500 clients',
-                'url': 'https://www.deloitte.com/careers',
-                'source':
