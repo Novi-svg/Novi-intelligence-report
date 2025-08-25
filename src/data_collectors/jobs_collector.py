@@ -447,9 +447,7 @@ class JobsCollector:
         demanded_skills = sorted(skill_keywords.items(), key=lambda x: x[1], reverse=True)
         return [{'skill': skill, 'demand_count': count} for skill, count in demanded_skills if count > 0]
             
-        except Exception as e:
-            logger.warning(f"Error extracting Naukri job data: {e}")
-            return None
+      # END OF FILE - Nothing should come after this line
     
     def _extract_indeed_job_data(self, card, base_url):
         """Extract job data from Indeed job card"""
