@@ -1,5 +1,3 @@
-#### File 9: `src/data_collectors/sap_collector.py`
-```python
 import requests
 from bs4 import BeautifulSoup
 import logging
@@ -317,8 +315,3 @@ class SAPCollector:
         ]
         
         return recommendations
-
-
-#### File 10: `src/utils/__init__.py`
-```python
-# Utils package
