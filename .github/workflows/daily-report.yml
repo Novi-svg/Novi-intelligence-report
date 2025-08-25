@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: 📥 Checkout Repository
+    - name: 🔥 Checkout Repository
       uses: actions/checkout@v4
       
     - name: 🐍 Set up Python
@@ -27,7 +27,7 @@ jobs:
       with:
         python-version: '3.11'
         
-    - name: 🔧 Cache Python Dependencies
+    - name: 📧 Cache Python Dependencies
       uses: actions/cache@v3
       with:
         path: ~/.cache/pip
@@ -40,12 +40,20 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
+    - name: 🔍 Check Python Syntax
+      run: |
+        echo "🔍 Checking syntax of all Python files..."
+        python -m py_compile src/data_collectors/jobs_collector.py
+        python -m py_compile src/utils/email_sender.py
+        python -m py_compile src/report_generator.py
+        echo "✅ Syntax check passed for all files"
+        
     - name: 🕐 Set Timezone to IST
       run: |
         sudo timedatectl set-timezone Asia/Kolkata
         echo "Current time: $(date)"
         
-    - name: 🔍 Validate Configuration
+    - name: 🔧 Validate Configuration
       env:
         EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
         EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
