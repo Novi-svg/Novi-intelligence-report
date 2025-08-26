@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novi's Intelligence Report - {{ date }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+            @bottom-center {
+                content: "Novi's Intelligence Report - Page " counter(page) " of " counter(pages);
+                font-size: 10pt;
+                color: #666;
+            }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            font-size: 11pt;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            page-break-inside: avoid;
+        }
+        
+        .header h1 {
+            font-size: 28pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .header .meta {
+            font-size: 12pt;
+            opacity: 0.9;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            background: #10B981;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 10pt;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+        
+        .section-title {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .subsection-title {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #6b7280;
+            margin: 25px 0 15px 0;
+        }
+        
+        .news-item {
+            background: #f9fafb;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-left: 4px solid #3b82f6;
+            border-radius: 4px;
+            page-break-inside: avoid;
+        }
+        
+        .news-item.breaking {
+            border-left-color: #ef4444;
+        }
+        
+        .news-item.important {
+            border-left-color: #f59e0b;
+        }
+        
+        .news-priority {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 8pt;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .priority-general {
+            background: #e0e7ff;
+            color: #3b82f6;
+        }
+        
+        .priority-breaking {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+        
+        .priority-important {
+            background: #fef3c7;
+            color: #f59e0b;
+        }
+        
+        .news-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 11pt;
+        }
+        
+        .news-source {
+            font-size: 9pt;
+            color: #6b7280;
+            margin-top: 8px;
+        }
+        
+        .stocks-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stock-card {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #6b7280;
+            page-break-inside: avoid;
+        }
+        
+        .stock-card.positive {
+            border-left-color: #10b981;
+        }
+        
+        .stock-card.negative {
+            border-left-color: #ef4444;
+        }
+        
+        .stock-name {
+            font-weight: bold;
+            font-size: 12pt;
+            margin-bottom: 4px;
+        }
+        
+        .stock-symbol {
+            font-size: 9pt;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        
+        .stock-price {
+            font-size: 16pt;
+            font-weight: bold;
+            margin: 8px 0;
+        }
+        
+        .price-positive {
+            color: #10b981;
+        }
+        
+        .price-negative {
+            color: #ef4444;
+        }
+        
+        .stock-metrics {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 9pt;
+        }
+        
+        .recommendation {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 8pt;
+            font-weight: bold;
+            background: #10b981;
+            color: white;
+            margin-top: 8px;
+        }
+        
+        .market-summary {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+        
+        .market-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            text-align: center;
+        }
+        
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .stat-number {
+            font-size: 20pt;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .job-card {
+            background: #f9fafb;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3b82f6;
+            border-radius: 4px;
+            page-break-inside: avoid;
+        }
+        
+        .job-relevance {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 8pt;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .job-title {
+            font-size: 13pt;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .job-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin: 10px 0;
+            font-size: 10pt;
+        }
+        
+        .job-detail-label {
+            font-weight: bold;
+            color: #6b7280;
+        }
+        
+        .footer {
+            background: #1f2937;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            margin-top: 40px;
+        }
+        
+        .footer-title {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .footer-meta {
+            font-size: 10pt;
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        .allocation-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .allocation-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .allocation-percentage {
+            font-size: 20pt;
+            font-weight: bold;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>📊 Novi's Intelligence Report</h1>
+        <div class="meta">
+            <strong>{{ date }}</strong> • {{ day }}<br>
+            Generated at {{ time }} {{ timezone }}
+        </div>
+        <span class="status-badge">✓ Report Generated Successfully</span>
+    </div>
+
+    <!-- News Section -->
+    <div class="section">
+        <h2 class="section-title">📰 News Updates</h2>
+        
+        {% if news.global %}
+        <h3 class="subsection-title">🌍 Global News</h3>
+        {% for item in news.global[:8] %}
+        <div class="news-item">
+            <span class="news-priority priority-general">GENERAL</span>
+            <div class="news-title">{{ item.title }}</div>
+            <div>{{ item.description }}</div>
+            <div class="news-source">{{ item.source }} • {{ item.published }}</div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {% if news.india %}
+        <h3 class="subsection-title">🇮🇳 India News</h3>
+        {% for item in news.india[:8] %}
+        <div class="news-item">
+            <span class="news-priority priority-general">GENERAL</span>
+            <div class="news-title">{{ item.title }}</div>
+            <div>{{ item.description }}</div>
+            <div class="news-source">{{ item.source }} • {{ item.published }}</div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {% if news.regional %}
+        <h3 class="subsection-title">🏢 Regional News (AP & Bangalore)</h3>
+        {% for item in news.regional[:6] %}
+        <div class="news-item">
+            <span class="news-priority priority-general">REGIONAL</span>
+            <div class="news-title">{{ item.title }}</div>
+            <div class="news-source">{{ item.source }} • {{ item.published }}</div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Page Break -->
+    <div class="page-break"></div>
+
+    <!-- Stock Market Analysis -->
+    {% if stocks and stocks.large_cap %}
+    <div class="section">
+        <h2 class="section-title">📈 Stock Market Analysis</h2>
+        
+        <!-- Market Summary -->
+        {% if stocks.analysis %}
+        <div class="market-summary">
+            <div class="market-stats">
+                <div class="stat-item">
+                    <div class="stat-number">{{ stocks.analysis.positive_stocks or 0 }}</div>
+                    <div>Positive Stocks</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ stocks.analysis.total_stocks or 0 }}</div>
+                    <div>Total Analyzed</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" style="color: {{ 'green' if stocks.analysis.market_trend == 'Bullish' else 'red' if stocks.analysis.market_trend == 'Bearish' else '#667eea' }}">
+                        {{ stocks.analysis.market_trend or 'Neutral' }}
+                    </div>
+                    <div>Market Trend</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <h3 class="subsection-title">🏢 Large Cap Stocks</h3>
+        <div class="stocks-grid">
+            {% for stock in stocks.large_cap[:6] %}
+            <div class="stock-card {{ 'positive' if stock.change and stock.change > 0 else 'negative' if stock.change and stock.change < 0 else '' }}">
+                <div class="stock-name">{{ stock.name }}</div>
+                <div class="stock-symbol">({{ stock.symbol }})</div>
+                <div class="stock-price {{ 'price-positive' if stock.change and stock.change > 0 else 'price-negative' if stock.change and stock.change < 0 else '' }}">
+                    ₹{{ stock.current_price or stock.price }}
+                </div>
+                <div class="stock-price {{ 'price-positive' if stock.change and stock.change > 0 else 'price-negative' if stock.change and stock.change < 0 else '' }}">
+                    {{ '+' if stock.change and stock.change > 0 else '' }}{{ stock.change or 0 }} ({{ stock.change_percent or 0 }}%)
+                </div>
+                <div class="stock-metrics">
+                    <span><strong>Score:</strong> {{ stock.overall_score or stock.score or 'N/A' }}/10</span>
+                    <span><strong>PE:</strong> {{ stock.pe_ratio or stock.pe or 'N/A' }}</span>
+                </div>
+                <span class="recommendation">{{ stock.recommendation or 'Hold' }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if stocks.mid_cap %}
+        <h3 class="subsection-title">🚀 Mid Cap Stocks</h3>
+        <div class="stocks-grid">
+            {% for stock in stocks.mid_cap[:4] %}
+            <div class="stock-card {{ 'positive' if stock.change and stock.change > 0 else 'negative' if stock.change and stock.change < 0 else '' }}">
+                <div class="stock-name">{{ stock.name }}</div>
+                <div class="stock-symbol">({{ stock.symbol }})</div>
+                <div class="stock-price {{ 'price-positive' if stock.change and stock.change > 0 else 'price-negative' if stock.change and stock.change < 0 else '' }}">
+                    ₹{{ stock.current_price or stock.price }}
+                </div>
+                <div class="stock-price {{ 'price-positive' if stock.change and stock.change > 0 else 'price-negative' if stock.change and stock.change < 0 else '' }}">
+                    {{ '+' if stock.change and stock.change > 0 else '' }}{{ stock.change or 0 }} ({{ stock.change_percent or 0 }}%)
+                </div>
+                <div class="stock-metrics">
+                    <span><strong>Score:</strong> {{ stock.overall_score or stock.score or 'N/A' }}/10</span>
+                    <span><strong>PE:</strong> {{ stock.pe_ratio or stock.pe or 'N/A' }}</span>
+                </div>
+                <span class="recommendation">{{ stock.recommendation or 'Hold' }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if stocks.small_cap %}
+        <h3 class="subsection-title">⚡ Small Cap Stocks</h3>
+        <div class="stocks-grid">
+            {% for stock in stocks.small_cap[:2] %}
+            <div class="stock-card {{ 'positive' if stock.change and stock.change > 0 else 'negative' if stock.change and stock.change < 0 else '' }}">
+                <div class="stock-name">{{ stock.name }}</div>
+                <div class="stock-symbol">({{ stock.symbol }})</div>
+                <div class="stock-price {{ 'price-positive' if stock.change and stock.change > 0 else 'price-negative' if stock.change and stock.change < 0 else '' }}">
+                    ₹{{ stock.current_price or stock.price }}
+                </div>
+                <div class="stock-price {{ 'price-positive' if stock.change and stock.change > 0 else 'price-negative' if stock.change and stock.change < 0 else '' }}">
+                    {{ '+' if stock.change and stock.change > 0 else '' }}{{ stock.change or 0 }} ({{ stock.change_percent or 0 }}%)
+                </div>
+                <div class="stock-metrics">
+                    <span><strong>Score:</strong> {{ stock.overall_score or stock.score or 'N/A' }}/10</span>
+                    <span><strong>PE:</strong> {{ stock.pe_ratio or stock.pe or 'N/A' }}</span>
+                </div>
+                <span class="recommendation">{{ stock.recommendation or 'Hold' }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Investment Analysis -->
+    {% if investment_analysis %}
+    <div class="page-break"></div>
+    <div class="section">
+        <h2 class="section-title">💰 Investment Analysis</h2>
+        <div class="market-summary">
+            <h3>📊 Recommended 5-Year Allocation Strategy</h3>
+            <div class="allocation-grid">
+                {% if investment_analysis.allocation_strategy %}
+                <div class="allocation-item">
+                    <div class="allocation-percentage">{{ investment_analysis.allocation_strategy.large_cap or 40 }}%</div>
+                    <div>Large Cap</div>
+                </div>
+                <div class="allocation-item">
+                    <div class="allocation-percentage">{{ investment_analysis.allocation_strategy.mid_cap or 25 }}%</div>
+                    <div>Mid Cap</div>
+                </div>
+                <div class="allocation-item">
+                    <div class="allocation-percentage">{{ investment_analysis.allocation_strategy.small_cap or 15 }}%</div>
+                    <div>Small Cap</div>
+                </div>
+                <div class="allocation-item">
+                    <div class="allocation-percentage">{{ investment_analysis.allocation_strategy.flexi_cap or 20 }}%</div>
+                    <div>Flexi Cap</div>
+                </div>
+                {% else %}
+                <div class="allocation-item">
+                    <div class="allocation-percentage">40%</div>
+                    <div>Large Cap</div>
+                </div>
+                <div class="allocation-item">
+                    <div class="allocation-percentage">25%</div>
+                    <div>Mid Cap</div>
+                </div>
+                <div class="allocation-item">
+                    <div class="allocation-percentage">15%</div>
+                    <div>Small Cap</div>
+                </div>
+                <div class="allocation-item">
+                    <div class="allocation-percentage">20%</div>
+                    <div>Flexi Cap</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="market-summary">
+            <h3>🔮 Market Outlook (2025-2030)</h3>
+            <p style="margin: 15px 0;">{{ investment_analysis.market_outlook.summary or "Indian markets expected to grow with focus on technology and renewable energy sectors" }}</p>
+            
+            <h4 style="margin: 20px 0 10px 0;">🎯 Key Investment Themes:</h4>
+            <ul style="list-style-type: none; padding: 0;">
+                {% for theme in investment_analysis.key_themes or ['Digital transformation', 'Green energy', 'Healthcare innovation', 'Financial inclusion'] %}
+                <li style="padding: 5px 0;">✓ {{ theme }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- SAP Job Opportunities -->
+    {% if jobs %}
+    <div class="page-break"></div>
+    <div class="section">
+        <h2 class="section-title">💼 SAP Job Opportunities</h2>
+        {% for job in jobs[:8] %}
+        <div class="job-card">
+            <span class="job-relevance">{{ job.relevance_score or 'High' }} Relevance</span>
+            <div class="job-title">{{ job.title }}</div>
+            <div class="job-details">
+                <div><span class="job-detail-label">🏢 Company:</span> {{ job.company }}</div>
+                <div><span class="job-detail-label">📍 Location:</span> {{ job.location }}</div>
+                <div><span class="job-detail-label">💰 Package:</span> {{ job.package }}</div>
+                <div><span class="job-detail-label">⏱️ Experience:</span> {{ job.experience }}</div>
+            </div>
+            <div style="margin-top: 10px;">
+                <strong>Requirements:</strong> {{ job.requirements }}
+            </div>
+            <div style="margin-top: 8px; color: #6b7280; font-size: 10pt;">
+                {{ job.description }}
+            </div>
+            <div style="margin-top: 8px; font-size: 9pt; color: #6b7280;">
+                {{ job.source }} • Posted: {{ job.posted_date }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Career Analysis -->
+    {% if career %}
+    <div class="page-break"></div>
+    <div class="section">
+        <h2 class="section-title">🚀 Career Development Insights</h2>
+        
+        {% if career.recommendations %}
+        <h3 class="subsection-title">🎯 Personalized Career Recommendations</h3>
+        {% for rec in career.recommendations[:3] %}
+        <div class="job-card">
+            <div class="job-title">{{ rec.timeline }}</div>
+            <div style="margin: 10px 0;"><strong>Focus:</strong> {{ rec.focus }}</div>
+            <div>
+                <strong>Specific Actions:</strong>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    {% for action in rec.specific_actions %}
+                    <li style="margin: 5px 0;">{{ action }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="footer-title">🤖 Powered by Novi's Intelligence System</div>
+        <div class="footer-meta">
+            Daily delivery at 5:00 AM IST<br>
+            Automated via GitHub Actions<br>
+            Generated on {{ date }} at {{ time }} {{ timezone }}
+        </div>
+    </div>
+</body>
+</html>
