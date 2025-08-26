@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 """
-Novi's Daily Intelligence Report Generator (Updated)
-- No API dependencies
-- Dynamic stock and mutual fund selection
-- Enhanced web scraping
-- Better error handling
+Novi's Daily Intelligence Report Generator with PDF Support
 """
 
 import sys
@@ -12,6 +8,7 @@ import os
 from datetime import datetime, timedelta
 import logging
 import traceback
+from pathlib import Path
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -22,6 +19,7 @@ from src.data_collectors.stock_collector import StockCollector
 from src.data_collectors.jobs_collector import JobsCollector
 from src.data_collectors.sap_collector import SAPCollector
 from src.utils.email_sender import EmailSender
+from src.utils.pdf_generator import PDFGenerator
 
 # Configure logging
 logging.basicConfig(
@@ -46,11 +44,16 @@ class ReportGenerator:
         self.jobs_collector = JobsCollector()
         self.sap_collector = SAPCollector()
         self.email_sender = EmailSender()
+        self.pdf_generator = PDFGenerator()
+        
+        # Create reports directory
+        self.reports_dir = Path('reports')
+        self.reports_dir.mkdir(exist_ok=True)
         
         logger.info(f"🎯 Report Generator initialized for {self.current_time.strftime('%A, %B %d, %Y')}")
-        
+
     def generate_report(self):
-        """Generate and send the daily intelligence report"""
+        """Generate and send the daily intelligence report as PDF"""
         try:
             logger.info("🚀 Starting Novi's Intelligence Report generation...")
             
@@ -58,48 +61,57 @@ class ReportGenerator:
             if should_skip_today():
                 logger.info("📅 Skipping report - excluded day")
                 return
-            
+
             # Validate email configuration
             config_issues = self.email_sender.validate_configuration()
             if config_issues:
                 for issue in config_issues:
                     logger.error(f"❌ Config issue: {issue}")
                 raise ValueError("Email configuration is invalid")
-            
+
             # Collect data with progress tracking
             logger.info("📊 Collecting data from all sources...")
             report_data = self.collect_all_data()
+
+            # Generate PDF filename
+            filename = f"novi_report_{self.current_time.strftime('%Y%m%d_%H%M')}.pdf"
+            pdf_path = self.reports_dir / filename
+
+            # Generate PDF report
+            logger.info("📄 Generating PDF report...")
+            self.pdf_generator.generate_pdf_report(report_data, str(pdf_path))
             
-            # Generate HTML report
-            logger.info("📝 Generating HTML report...")
-            html_content = self.generate_html_report(report_data)
-            
-            # Send email
-            logger.info("📧 Sending email report...")
+            # Get PDF file size
+            pdf_size_mb = self.pdf_generator.get_pdf_size_mb(str(pdf_path))
+            logger.info(f"📊 PDF generated: {pdf_size_mb:.1f} MB")
+
+            # Send email with PDF attachment
+            logger.info("📧 Sending email with PDF attachment...")
             subject = f"📊 Novi's Intelligence Report - {self.current_time.strftime('%B %d, %Y')}"
-            success = self.email_sender.send_email(subject, html_content)
-            
+            success = self.email_sender.send_pdf_report(subject, str(pdf_path), pdf_size_mb)
+
             if success:
-                logger.info("✅ Report sent successfully!")
-                self.log_success_metrics(report_data)
+                logger.info("✅ PDF Report sent successfully!")
+                self.log_success_metrics(report_data, pdf_size_mb)
             else:
                 raise Exception("Email sending failed")
-            
+
         except Exception as e:
             logger.error(f"❌ Error generating report: {str(e)}")
             logger.error(f"Full traceback: {traceback.format_exc()}")
             self.send_error_notification(e)
             raise
-    
+
     def collect_all_data(self):
         """Collect data from all sources with error handling"""
         data = {
             'date': self.current_time.strftime('%B %d, %Y'),
             'day': self.current_time.strftime('%A'),
-            'time': self.current_time.strftime('%I:%M %p IST'),
+            'time': self.current_time.strftime('%I:%M %p'),
+            'timezone': 'IST',
             'generation_time': self.current_time.isoformat()
         }
-        
+
         # News (Daily) - Always collect
         try:
             logger.info("📰 Collecting news data...")
@@ -108,7 +120,7 @@ class ReportGenerator:
         except Exception as e:
             logger.error(f"❌ News collection failed: {e}")
             data['news'] = {'global': [], 'india': [], 'business': [], 'regional': []}
-        
+
         # Stocks & Mutual Funds (Skip Sunday for market data)
         if self.current_day != 6:  # Not Sunday
             try:
@@ -123,7 +135,6 @@ class ReportGenerator:
                 logger.info("📊 Generating investment analysis...")
                 data['investment_analysis'] = self.stock_collector.get_investment_analysis()
                 logger.info("✅ Investment analysis generated")
-                
             except Exception as e:
                 logger.error(f"❌ Stock/MF collection failed: {e}")
                 data['stocks'] = {'large_cap': [], 'mid_cap': [], 'small_cap': [], 'analysis': {}}
@@ -131,7 +142,7 @@ class ReportGenerator:
                 data['investment_analysis'] = {}
         else:
             logger.info("📅 Skipping market data (Sunday)")
-        
+
         # Jobs (Daily) - Always collect
         try:
             logger.info("💼 Collecting job opportunities...")
@@ -140,7 +151,7 @@ class ReportGenerator:
         except Exception as e:
             logger.error(f"❌ Jobs collection failed: {e}")
             data['jobs'] = []
-        
+
         # SAP Data (Saturday only)
         if self.current_day == 5:  # Saturday
             try:
@@ -150,7 +161,7 @@ class ReportGenerator:
             except Exception as e:
                 logger.error(f"❌ SAP data collection failed: {e}")
                 data['sap'] = {}
-        
+
         # Career Analysis (Bi-weekly: Monday & Saturday)
         if self.current_day in [0, 5]:  # Monday or Saturday
             try:
@@ -160,163 +171,47 @@ class ReportGenerator:
             except Exception as e:
                 logger.error(f"❌ Career analysis failed: {e}")
                 data['career'] = {}
-        
+
         return data
-    
-    def generate_html_report(self, data):
-        """Generate HTML email content using Jinja2 template"""
-        try:
-            from jinja2 import Environment, FileSystemLoader
-            
-            # Load template
-            template_dir = os.path.join(os.path.dirname(__file__), 'templates')
-            env = Environment(loader=FileSystemLoader(template_dir))
-            template = env.get_template('email_template.html')
-            
-            # Add some helper functions to template context
-            data['has_market_data'] = bool(data.get('stocks') and data['stocks'].get('large_cap'))
-            data['has_jobs'] = bool(data.get('jobs'))
-            data['has_sap_data'] = bool(data.get('sap'))
-            data['has_career_data'] = bool(data.get('career'))
-            
-            # Render template with data
-            html_content = template.render(**data)
-            
-            logger.info(f"✅ HTML report generated ({len(html_content)} characters)")
-            return html_content
-            
-        except Exception as e:
-            logger.error(f"❌ HTML generation failed: {e}")
-            # Return a simple fallback HTML
-            return self._generate_fallback_html(data)
-    
-    def _generate_fallback_html(self, data):
-        """Generate simple fallback HTML if template fails"""
-        html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Novi's Intelligence Report - {data['date']}</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                .header {{ background: #4facfe; color: white; padding: 20px; text-align: center; }}
-                .section {{ margin: 20px 0; padding: 15px; border-left: 4px solid #007bff; }}
-                .error {{ color: #dc3545; font-weight: bold; }}
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1>📊 Novi's Intelligence Report</h1>
-                <p>{data['date']} • {data['day']}</p>
-            </div>
-            
-            <div class="section">
-                <p class="error">⚠️ Report template error occurred. Basic report generated.</p>
-                <p><strong>Time:</strong> {data['time']}</p>
-                <p><strong>News Items:</strong> {len(data.get('news', {}).get('global', []))}</p>
-                <p><strong>Jobs Found:</strong> {len(data.get('jobs', []))}</p>
-                <p><strong>Status:</strong> System is working, template needs attention</p>
-            </div>
-            
-            <div class="section">
-                <h3>📰 Latest News</h3>
-                {''.join([f'<p>• {item.get("title", "")}</p>' for item in data.get('news', {}).get('global', [])[:5]])}
-            </div>
-            
-            <div class="section">
-                <h3>💼 Job Opportunities</h3>
-                {''.join([f'<p>• {job.get("title", "")} at {job.get("company", "")}</p>' for job in data.get('jobs', [])[:5]])}
-            </div>
-        </body>
-        </html>
-        """
-        return html
-    
-    def send_error_notification(self, error):
-        """Send error notification email"""
-        try:
-            error_details = {
-                'error_message': str(error),
-                'error_type': type(error).__name__,
-                'timestamp': self.current_time.strftime('%Y-%m-%d %H:%M:%S IST'),
-                'traceback': traceback.format_exc()
-            }
-            
-            self.email_sender.send_error_notification(
-                error_details['traceback'], 
-                error_details['error_type']
-            )
-            
-        except Exception as e:
-            logger.error(f"Failed to send error notification: {str(e)}")
-    
-    def log_success_metrics(self, report_data):
-        """Log success metrics for monitoring"""
+
+    def log_success_metrics(self, data, pdf_size_mb):
+        """Log success metrics"""
         try:
             metrics = {
-                'news_count': len(report_data.get('news', {}).get('global', [])),
-                'jobs_count': len(report_data.get('jobs', [])),
-                'stocks_count': len(report_data.get('stocks', {}).get('large_cap', [])),
-                'generation_time': self.current_time.isoformat(),
-                'report_type': self._get_report_type()
+                'news_items': len(data.get('news', {}).get('global', [])) + len(data.get('news', {}).get('india', [])),
+                'stock_items': len(data.get('stocks', {}).get('large_cap', [])) + len(data.get('stocks', {}).get('mid_cap', [])),
+                'job_items': len(data.get('jobs', [])),
+                'pdf_size_mb': pdf_size_mb,
+                'generation_time': data.get('generation_time')
             }
             
-            logger.info("📈 Success Metrics:")
-            for key, value in metrics.items():
-                logger.info(f"  {key}: {value}")
-                
+            logger.info("📊 Success Metrics:")
+            logger.info(f"   📰 News Items: {metrics['news_items']}")
+            logger.info(f"   📈 Stock Items: {metrics['stock_items']}")
+            logger.info(f"   💼 Job Items: {metrics['job_items']}")
+            logger.info(f"   📄 PDF Size: {metrics['pdf_size_mb']:.1f} MB")
+            logger.info(f"   ⏱️ Generated: {metrics['generation_time']}")
+            
         except Exception as e:
             logger.warning(f"Could not log metrics: {e}")
-    
-    def _get_report_type(self):
-        """Determine the type of report being generated"""
-        report_types = []
-        
-        if self.current_day != 6:  # Not Sunday
-            report_types.append("Markets")
-        
-        if self.current_day == 5:  # Saturday
-            report_types.append("SAP-Weekly")
-        
-        if self.current_day in [0, 5]:  # Monday or Saturday
-            report_types.append("Career-Analysis")
-        
-        report_types.append("Daily")
-        
-        return "+".join(report_types)
+
+    def send_error_notification(self, error):
+        """Send error notification"""
+        try:
+            error_msg = f"Report generation failed: {str(error)}"
+            self.email_sender.send_error_notification(error_msg, "PDF Report Generation Error")
+        except Exception as e:
+            logger.error(f"Failed to send error notification: {e}")
 
 def main():
-    """Main execution function with enhanced error handling"""
+    """Main function"""
     try:
-        logger.info("=" * 50)
-        logger.info("🚀 NOVI'S INTELLIGENCE REPORT SYSTEM")
-        logger.info("=" * 50)
-        
-        # Create report generator
         generator = ReportGenerator()
-        
-        # Generate and send report
         generator.generate_report()
-        
-        logger.info("=" * 50)
-        logger.info("✅ REPORT GENERATION COMPLETED SUCCESSFULLY")
-        logger.info("=" * 50)
-        
-    except KeyboardInterrupt:
-        logger.info("⏹️  Report generation interrupted by user")
-        sys.exit(1)
-        
+        logger.info("🎉 Report generation completed successfully!")
     except Exception as e:
-        logger.error("=" * 50)
-        logger.error("❌ FATAL ERROR IN REPORT GENERATION")
-        logger.error("=" * 50)
-        logger.error(f"Error: {str(e)}")
-        logger.error(f"Type: {type(e).__name__}")
-        logger.error("Traceback:")
-        logger.error(traceback.format_exc())
-        logger.error("=" * 50)
+        logger.error(f"💥 Fatal error: {str(e)}")
         sys.exit(1)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
