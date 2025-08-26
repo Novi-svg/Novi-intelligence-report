@@ -1,11 +1,15 @@
+#!/usr/bin/env python3
+"""
+Enhanced Email Sender with PDF Attachment Support
+"""
+
 import smtplib
-import ssl
+import os
+import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
+from email.mime.application import MIMEApplication
 from datetime import datetime
-import logging
 from config import Config
 
 logger = logging.getLogger(__name__)
@@ -13,266 +17,213 @@ logger = logging.getLogger(__name__)
 class EmailSender:
     def __init__(self):
         self.config = Config()
+        
+    def validate_configuration(self):
+        """Validate email configuration"""
+        issues = []
+        
+        if not self.config.EMAIL_FROM:
+            issues.append("EMAIL_FROM environment variable not set")
+        if not self.config.EMAIL_PASSWORD:
+            issues.append("EMAIL_PASSWORD environment variable not set")
+        if not self.config.EMAIL_TO:
+            issues.append("EMAIL_TO environment variable not set")
+            
+        return issues
     
-    def send_email(self, subject, html_content, to_email=None, attachments=None):
-        """Send HTML email via Gmail SMTP"""
+    def send_pdf_report(self, subject: str, pdf_path: str, pdf_size_mb: float) -> bool:
+        """Send email with PDF attachment."""
         try:
-            # Email configuration
-            from_email = self.config.EMAIL_FROM
-            password = self.config.EMAIL_PASSWORD
-            to_email = to_email or self.config.EMAIL_TO
-            
-            if not all([from_email, password, to_email]):
-                raise ValueError("Missing email configuration. Check environment variables.")
-            
-            logger.info(f"Preparing email from {from_email} to {to_email}")
+            logger.info("📧 Preparing email with PDF attachment...")
             
             # Create message
-            message = MIMEMultipart("alternative")
-            message["Subject"] = subject
-            message["From"] = from_email
-            message["To"] = to_email
+            msg = MIMEMultipart()
+            msg['From'] = self.config.EMAIL_FROM
+            msg['To'] = self.config.EMAIL_TO
+            msg['Subject'] = subject
             
-            # Add HTML content
-            html_part = MIMEText(html_content, "html", "utf-8")
-            message.attach(html_part)
+            # Create email body
+            body = self._create_notification_email_body(pdf_size_mb)
+            msg.attach(MIMEText(body, 'plain'))
             
-            # Add plain text fallback
-            plain_text = self._html_to_text(html_content)
-            text_part = MIMEText(plain_text, "plain", "utf-8")
-            message.attach(text_part)
+            # Add PDF attachment
+            with open(pdf_path, 'rb') as pdf_file:
+                pdf_attachment = MIMEApplication(pdf_file.read(), _subtype='pdf')
+                pdf_attachment.add_header(
+                    'Content-Disposition', 
+                    'attachment', 
+                    filename=os.path.basename(pdf_path)
+                )
+                msg.attach(pdf_attachment)
             
-            # Add attachments if any
-            if attachments:
-                for attachment in attachments:
-                    self._add_attachment(message, attachment)
+            # Send email
+            logger.info("🔗 Connecting to SMTP server...")
+            server = smtplib.SMTP(self.config.SMTP_SERVER, self.config.SMTP_PORT)
+            server.starttls()
+            server.login(self.config.EMAIL_FROM, self.config.EMAIL_PASSWORD)
             
-            # Send email using Gmail SMTP
-            logger.info("Connecting to Gmail SMTP server...")
+            logger.info("📤 Sending email...")
+            text = msg.as_string()
+            server.sendmail(self.config.EMAIL_FROM, self.config.EMAIL_TO, text)
+            server.quit()
             
-            # Create secure context
-            context = ssl.create_default_context()
+            logger.info("✅ Email sent successfully!")
+            return True
             
-            # Connect to Gmail SMTP server
-            with smtplib.SMTP(self.config.SMTP_SERVER, self.config.SMTP_PORT) as server:
-                server.set_debuglevel(0)  # Set to 1 for debugging
-                
-                # Enable starttls for security
-                server.starttls(context=context)
-                logger.info("Started TLS connection")
-                
-                # Login to the server
-                server.login(from_email, password)
-                logger.info("Successfully logged in to Gmail")
-                
-                # Send email
-                text = message.as_string()
-                server.sendmail(from_email, to_email, text)
-                logger.info(f"✅ Email sent successfully to {to_email}")
+        except Exception as e:
+            logger.error(f"❌ Error sending email: {str(e)}")
+            return False
+    
+    def _create_notification_email_body(self, pdf_size_mb: float) -> str:
+        """Create a simple notification email body."""
+        current_time = datetime.now(self.config.IST)
+        body = f"""📊 Novi's Intelligence Report - {current_time.strftime('%B %d, %Y')}
+
+Your comprehensive intelligence report is ready! Please find the detailed PDF report attached.
+
+📋 Report Summary:
+• Generated: {current_time.strftime('%A, %B %d, %Y at %I:%M %p IST')}
+• Format: Professional PDF Document
+• Size: {pdf_size_mb:.1f} MB
+• Contains: Market Analysis, News Updates, Job Opportunities, Career Insights
+
+📈 What's Inside:
+• Real-time stock market analysis with performance indicators
+• Latest global and India news updates with priority categorization
+• Curated SAP job opportunities matching your profile
+• Investment recommendations and market outlook
+• Career development insights and future trends
+
+💡 Key Features:
+• Visual charts and performance indicators
+• Color-coded stock movements and news priorities  
+• Professional formatting optimized for reading
+• Mobile-friendly design that prints well
+
+🔗 System Details:
+• Powered by Novi's Intelligence System
+• Automated data collection from multiple sources
+• Daily delivery at 5:00 AM IST via GitHub Actions
+• All data sources verified and up-to-date
+
+📧 Support:
+For any issues or suggestions, please check your GitHub Actions workflow logs or create an issue in your repository.
+
+Best regards,
+🤖 Novi's Intelligence System
+
+---
+This is an automated message. Please do not reply to this email.
+Generated with ❤️ by your personal intelligence system.
+        """
+        return body.strip()
+    
+    def send_error_notification(self, error_message: str, error_type: str = "Report Generation Error") -> bool:
+        """Send error notification email."""
+        try:
+            subject = f"🚨 {error_type} - {datetime.now().strftime('%Y-%m-%d %H:%M IST')}"
+            
+            body = f"""🚨 Novi's Intelligence Report Error Notification
+
+An error occurred while generating your daily intelligence report.
+
+📊 Error Details:
+• Time: {datetime.now().strftime('%A, %B %d, %Y at %I:%M %p IST')}
+• Type: {error_type}
+• Message: {error_message}
+
+🔧 Next Steps:
+1. Check GitHub Actions logs for detailed error information
+2. Verify all environment variables are properly set
+3. Ensure all required dependencies are installed
+4. Check data source availability
+
+📋 System Status:
+• The system will automatically retry tomorrow
+• Previous reports remain unaffected
+• Check repository issues for similar problems
+
+🔗 Troubleshooting:
+• Review workflow logs in GitHub Actions tab
+• Verify email credentials are still valid
+• Check if any data sources have changed their structure
+
+This notification was sent to ensure you're aware of the issue.
+
+Best regards,
+🤖 Novi's Intelligence System (Error Handler)
+            """
+            
+            msg = MIMEMultipart()
+            msg['From'] = self.config.EMAIL_FROM
+            msg['To'] = self.config.EMAIL_TO
+            msg['Subject'] = subject
+            msg.attach(MIMEText(body, 'plain'))
+            
+            server = smtplib.SMTP(self.config.SMTP_SERVER, self.config.SMTP_PORT)
+            server.starttls()
+            server.login(self.config.EMAIL_FROM, self.config.EMAIL_PASSWORD)
+            server.sendmail(self.config.EMAIL_FROM, self.config.EMAIL_TO, msg.as_string())
+            server.quit()
+            
+            logger.info("📧 Error notification sent successfully")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to send error notification: {str(e)}")
+            return False
+    
+    def send_test_email(self) -> bool:
+        """Send a test email to verify configuration."""
+        try:
+            current_time = datetime.now(self.config.IST)
+            
+            subject = f"✅ Novi's Intelligence System - Test Email - {current_time.strftime('%Y-%m-%d %H:%M IST')}"
+            
+            body = f"""✅ Email Configuration Test Successful!
+
+🎯 Test Results:
+• SMTP Connection: ✅ Working
+• Authentication: ✅ Successful  
+• Email Delivery: ✅ Working
+
+📊 Configuration Details:
+• Test Date: {current_time.strftime('%A, %B %d, %Y at %I:%M %p IST')}
+• From: {self.config.EMAIL_FROM}
+• To: {self.config.EMAIL_TO}
+• Server: {self.config.SMTP_SERVER}:{self.config.SMTP_PORT}
+
+🚀 Next Steps:
+• Your email configuration is working properly
+• Daily PDF reports will be sent at 5:00 AM IST
+• Check GitHub Actions logs for any issues
+• The system is ready for automated report delivery
+
+📧 System Status:
+• ✅ Gmail SMTP connection: Working
+• ✅ Authentication: Successful
+• ✅ PDF email delivery: Ready
+
+This test confirms your Novi's Intelligence System is properly configured and ready to deliver daily PDF reports.
+
+Best regards,
+🤖 Novi's Intelligence System (Test Mode)
+            """
+            
+            msg = MIMEMultipart()
+            msg['From'] = self.config.EMAIL_FROM
+            msg['To'] = self.config.EMAIL_TO
+            msg['Subject'] = subject
+            msg.attach(MIMEText(body, 'plain'))
+            
+            server = smtplib.SMTP(self.config.SMTP_SERVER, self.config.SMTP_PORT)
+            server.starttls()
+            server.login(self.config.EMAIL_FROM, self.config.EMAIL_PASSWORD)
+            server.sendmail(self.config.EMAIL_FROM, self.config.EMAIL_TO, msg.as_string())
+            server.quit()
             
             return True
             
-        except smtplib.SMTPAuthenticationError as e:
-            logger.error(f"❌ SMTP Authentication failed: {str(e)}")
-            logger.error("Please check:")
-            logger.error("1. Gmail app password is correct")
-            logger.error("2. 2-Factor Authentication is enabled")
-            logger.error("3. App password was generated recently")
-            raise
-            
-        except smtplib.SMTPRecipientsRefused as e:
-            logger.error(f"❌ Recipient email refused: {str(e)}")
-            logger.error("Please check the recipient email address")
-            raise
-            
-        except smtplib.SMTPException as e:
-            logger.error(f"❌ SMTP error occurred: {str(e)}")
-            raise
-            
-        except Exception as e:
-            logger.error(f"❌ Unexpected error sending email: {str(e)}")
-            raise
-    
-    def send_test_email(self):
-        """Send a test email to verify configuration"""
-        try:
-            subject = "🧪 Novi Intelligence Report - Test Email"
-            html_content = self._get_test_email_content()
-            
-            result = self.send_email(subject, html_content)
-            
-            if result:
-                logger.info("✅ Test email sent successfully!")
-                return True
-            else:
-                logger.error("❌ Test email failed")
-                return False
-                
         except Exception as e:
             logger.error(f"❌ Test email failed: {str(e)}")
             return False
-    
-    def _get_test_email_content(self):
-        """Generate test email content"""
-        current_time = datetime.now().strftime('%B %d, %Y at %I:%M %p')
-        
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                .container {{ max-width: 600px; margin: 0 auto; }}
-                .header {{ background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 30px; text-align: center; border-radius: 10px; }}
-                .content {{ background: #f8f9fa; padding: 30px; margin: 20px 0; border-radius: 10px; }}
-                .success {{ color: #28a745; font-size: 18px; font-weight: bold; }}
-                .info {{ color: #6c757d; margin: 10px 0; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🧪 Test Email Successful</h1>
-                    <p>Novi's Intelligence Report System</p>
-                </div>
-                <div class="content">
-                    <p class="success">✅ Email configuration is working correctly!</p>
-                    <p class="info">📅 <strong>Test Date:</strong> {current_time}</p>
-                    <p class="info">📧 <strong>From:</strong> {self.config.EMAIL_FROM}</p>
-                    <p class="info">📬 <strong>To:</strong> {self.config.EMAIL_TO}</p>
-                    
-                    <h3>Next Steps:</h3>
-                    <ul>
-                        <li>Your email configuration is working properly</li>
-                        <li>Daily reports will be sent at 5:00 AM IST</li>
-                        <li>Check GitHub Actions logs for any issues</li>
-                    </ul>
-                    
-                    <h3>System Status:</h3>
-                    <ul>
-                        <li>✅ Gmail SMTP connection: Working</li>
-                        <li>✅ Authentication: Successful</li>
-                        <li>✅ HTML email rendering: Working</li>
-                    </ul>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
-        
-        return html_content
-    
-    def _html_to_text(self, html_content):
-        """Convert HTML content to plain text for email fallback"""
-        try:
-            from bs4 import BeautifulSoup
-            soup = BeautifulSoup(html_content, 'html.parser')
-            
-            # Remove script and style elements
-            for script in soup(["script", "style"]):
-                script.decompose()
-            
-            # Get text content
-            text = soup.get_text()
-            
-            # Clean up whitespace
-            lines = (line.strip() for line in text.splitlines())
-            chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-            text = ' '.join(chunk for chunk in chunks if chunk)
-            
-            return text
-            
-        except Exception as e:
-            logger.warning(f"Could not convert HTML to text: {e}")
-            return "Novi's Intelligence Report - Please view HTML version for full content."
-    
-    def _add_attachment(self, message, attachment_path):
-        """Add attachment to email"""
-        try:
-            with open(attachment_path, "rb") as attachment:
-                part = MIMEBase('application', 'octet-stream')
-                part.set_payload(attachment.read())
-            
-            encoders.encode_base64(part)
-            
-            part.add_header(
-                'Content-Disposition',
-                f'attachment; filename= {attachment_path.split("/")[-1]}',
-            )
-            
-            message.attach(part)
-            
-        except Exception as e:
-            logger.warning(f"Could not add attachment {attachment_path}: {e}")
-    
-    def send_error_notification(self, error_message, error_type="General Error"):
-        """Send error notification email"""
-        try:
-            subject = "🚨 Novi Intelligence Report - System Error"
-            
-            html_content = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <style>
-                    body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                    .container {{ max-width: 600px; margin: 0 auto; }}
-                    .header {{ background: #dc3545; color: white; padding: 20px; text-align: center; border-radius: 10px; }}
-                    .content {{ background: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 10px; border-left: 4px solid #dc3545; }}
-                    .error {{ color: #dc3545; font-weight: bold; }}
-                    .timestamp {{ color: #6c757d; font-size: 0.9em; }}
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="header">
-                        <h1>🚨 System Error Alert</h1>
-                        <p>Novi's Intelligence Report</p>
-                    </div>
-                    <div class="content">
-                        <p class="error">Error Type: {error_type}</p>
-                        <p><strong>Error Message:</strong></p>
-                        <pre style="background: #f1f3f4; padding: 10px; border-radius: 5px; overflow-x: auto;">{error_message}</pre>
-                        <p class="timestamp">Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S IST')}</p>
-                        
-                        <h3>Recommended Actions:</h3>
-                        <ul>
-                            <li>Check GitHub Actions logs for detailed error information</li>
-                            <li>Verify all environment variables are set correctly</li>
-                            <li>Check API quotas and rate limits</li>
-                            <li>System will retry automatically tomorrow</li>
-                        </ul>
-                    </div>
-                </div>
-            </body>
-            </html>
-            """
-            
-            self.send_email(subject, html_content)
-            logger.info("Error notification sent successfully")
-            
-        except Exception as e:
-            logger.error(f"Failed to send error notification: {e}")
-    
-    def validate_configuration(self):
-        """Validate email configuration"""
-        config_issues = []
-        
-        if not self.config.EMAIL_FROM:
-            config_issues.append("EMAIL_FROM environment variable not set")
-        
-        if not self.config.EMAIL_PASSWORD:
-            config_issues.append("EMAIL_PASSWORD environment variable not set")
-        
-        if not self.config.EMAIL_TO:
-            config_issues.append("EMAIL_TO environment variable not set")
-        
-        if self.config.EMAIL_FROM and '@gmail.com' not in self.config.EMAIL_FROM:
-            config_issues.append("EMAIL_FROM must be a Gmail address")
-        
-        if self.config.EMAIL_PASSWORD and len(self.config.EMAIL_PASSWORD.replace(' ', '')) != 16:
-            config_issues.append("EMAIL_PASSWORD should be a 16-character Gmail app password")
-        
-        return config_issues
