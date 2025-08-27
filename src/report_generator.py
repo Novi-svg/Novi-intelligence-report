@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Novi's Daily Intelligence Report Generator with PDF Support
+Novi's Daily Intelligence Report Generator with Enhanced PDF Support
 """
 
 import sys
@@ -30,6 +30,7 @@ logging.basicConfig(
         logging.FileHandler('/tmp/novi_report.log', mode='a')
     ]
 )
+
 logger = logging.getLogger(__name__)
 
 class ReportGenerator:
@@ -61,22 +62,22 @@ class ReportGenerator:
             if should_skip_today():
                 logger.info("📅 Skipping report - excluded day")
                 return
-
+            
             # Validate email configuration
             config_issues = self.email_sender.validate_configuration()
             if config_issues:
                 for issue in config_issues:
                     logger.error(f"❌ Config issue: {issue}")
                 raise ValueError("Email configuration is invalid")
-
+            
             # Collect data with progress tracking
             logger.info("📊 Collecting data from all sources...")
             report_data = self.collect_all_data()
-
+            
             # Generate PDF filename
             filename = f"novi_report_{self.current_time.strftime('%Y%m%d_%H%M')}.pdf"
             pdf_path = self.reports_dir / filename
-
+            
             # Generate PDF report
             logger.info("📄 Generating PDF report...")
             self.pdf_generator.generate_pdf_report(report_data, str(pdf_path))
@@ -84,18 +85,18 @@ class ReportGenerator:
             # Get PDF file size
             pdf_size_mb = self.pdf_generator.get_pdf_size_mb(str(pdf_path))
             logger.info(f"📊 PDF generated: {pdf_size_mb:.1f} MB")
-
+            
             # Send email with PDF attachment
             logger.info("📧 Sending email with PDF attachment...")
             subject = f"📊 Novi's Intelligence Report - {self.current_time.strftime('%B %d, %Y')}"
             success = self.email_sender.send_pdf_report(subject, str(pdf_path), pdf_size_mb)
-
+            
             if success:
                 logger.info("✅ PDF Report sent successfully!")
                 self.log_success_metrics(report_data, pdf_size_mb)
             else:
                 raise Exception("Email sending failed")
-
+                
         except Exception as e:
             logger.error(f"❌ Error generating report: {str(e)}")
             logger.error(f"Full traceback: {traceback.format_exc()}")
@@ -103,7 +104,7 @@ class ReportGenerator:
             raise
 
     def collect_all_data(self):
-        """Collect data from all sources with error handling"""
+        """Collect data from all sources with enhanced error handling"""
         data = {
             'date': self.current_time.strftime('%B %d, %Y'),
             'day': self.current_time.strftime('%A'),
@@ -111,7 +112,7 @@ class ReportGenerator:
             'timezone': 'IST',
             'generation_time': self.current_time.isoformat()
         }
-
+        
         # News (Daily) - Always collect
         try:
             logger.info("📰 Collecting news data...")
@@ -133,26 +134,43 @@ class ReportGenerator:
                 logger.info(f"✅ Mutual funds collected: {sum(len(funds) for funds in data['mutual_funds'].values())} total")
                 
                 logger.info("📊 Generating investment analysis...")
-                data['investment_analysis'] = self.stock_collector.get_investment_analysis()
+                data['investment_analysis'] = self.stock_collector.get_job_market_analysis()  # Enhanced analysis
                 logger.info("✅ Investment analysis generated")
+                
             except Exception as e:
                 logger.error(f"❌ Stock/MF collection failed: {e}")
-                data['stocks'] = {'large_cap': [], 'mid_cap': [], 'small_cap': [], 'analysis': {}}
+                data['stocks'] = {'large_cap': [], 'mid_cap': [], 'small_cap': [], 'analysis': {}, 'market_overview': {}}
                 data['mutual_funds'] = {'large_cap': [], 'mid_cap': [], 'small_cap': [], 'flexi_cap': []}
-                data['investment_analysis'] = {}
+                data['investment_analysis'] = {'market_outlook': {'summary': 'Market data unavailable due to collection error'}}
         else:
             logger.info("📅 Skipping market data (Sunday)")
+            data['stocks'] = {'large_cap': [], 'mid_cap': [], 'small_cap': [], 'analysis': {}, 'market_overview': {}}
+            data['mutual_funds'] = {'large_cap': [], 'mid_cap': [], 'small_cap': [], 'flexi_cap': []}
+            data['investment_analysis'] = {'market_outlook': {'summary': 'Markets closed on Sunday'}}
 
-        # Jobs (Daily) - Always collect
+        # Jobs (Daily) - Always collect with enhanced categorization
         try:
             logger.info("💼 Collecting job opportunities...")
-            data['jobs'] = self.jobs_collector.get_jobs()
-            logger.info(f"✅ Jobs collected: {len(data['jobs'])} opportunities")
+            jobs_result = self.jobs_collector.get_jobs()
+            
+            # Ensure we have the expected structure
+            if isinstance(jobs_result, dict):
+                data['jobs'] = jobs_result
+            else:
+                # Legacy format - convert to new structure
+                data['jobs'] = {
+                    'sap_category': jobs_result if isinstance(jobs_result, list) else [],
+                    'ai_transition_category': []
+                }
+            
+            total_jobs = len(data['jobs'].get('sap_category', [])) + len(data['jobs'].get('ai_transition_category', []))
+            logger.info(f"✅ Jobs collected: {total_jobs} total ({len(data['jobs'].get('sap_category', []))} SAP, {len(data['jobs'].get('ai_transition_category', []))} AI transition)")
+            
         except Exception as e:
             logger.error(f"❌ Jobs collection failed: {e}")
-            data['jobs'] = []
+            data['jobs'] = {'sap_category': [], 'ai_transition_category': []}
 
-        # SAP Data (Saturday only)
+        # SAP Data (Saturday only for comprehensive analysis)
         if self.current_day == 5:  # Saturday
             try:
                 logger.info("🔧 Collecting SAP weekly insights...")
@@ -161,7 +179,7 @@ class ReportGenerator:
             except Exception as e:
                 logger.error(f"❌ SAP data collection failed: {e}")
                 data['sap'] = {}
-
+        
         # Career Analysis (Bi-weekly: Monday & Saturday)
         if self.current_day in [0, 5]:  # Monday or Saturday
             try:
@@ -171,26 +189,38 @@ class ReportGenerator:
             except Exception as e:
                 logger.error(f"❌ Career analysis failed: {e}")
                 data['career'] = {}
-
+        
         return data
 
     def log_success_metrics(self, data, pdf_size_mb):
-        """Log success metrics"""
+        """Log comprehensive success metrics"""
         try:
+            # Calculate job counts
+            sap_jobs = len(data.get('jobs', {}).get('sap_category', []))
+            ai_jobs = len(data.get('jobs', {}).get('ai_transition_category', []))
+            
             metrics = {
                 'news_items': len(data.get('news', {}).get('global', [])) + len(data.get('news', {}).get('india', [])),
                 'stock_items': len(data.get('stocks', {}).get('large_cap', [])) + len(data.get('stocks', {}).get('mid_cap', [])),
-                'job_items': len(data.get('jobs', [])),
+                'sap_job_items': sap_jobs,
+                'ai_job_items': ai_jobs,
+                'total_job_items': sap_jobs + ai_jobs,
                 'pdf_size_mb': pdf_size_mb,
-                'generation_time': data.get('generation_time')
+                'generation_time': data.get('generation_time'),
+                'has_sap_data': bool(data.get('sap')),
+                'has_career_data': bool(data.get('career'))
             }
             
             logger.info("📊 Success Metrics:")
-            logger.info(f"   📰 News Items: {metrics['news_items']}")
-            logger.info(f"   📈 Stock Items: {metrics['stock_items']}")
-            logger.info(f"   💼 Job Items: {metrics['job_items']}")
-            logger.info(f"   📄 PDF Size: {metrics['pdf_size_mb']:.1f} MB")
-            logger.info(f"   ⏱️ Generated: {metrics['generation_time']}")
+            logger.info(f" 📰 News Items: {metrics['news_items']}")
+            logger.info(f" 📈 Stock Items: {metrics['stock_items']}")
+            logger.info(f" 💼 SAP Jobs: {metrics['sap_job_items']}")
+            logger.info(f" 🤖 AI Transition Jobs: {metrics['ai_job_items']}")
+            logger.info(f" 📊 Total Jobs: {metrics['total_job_items']}")
+            logger.info(f" 📄 PDF Size: {metrics['pdf_size_mb']:.1f} MB")
+            logger.info(f" 🔧 SAP Data: {'✅' if metrics['has_sap_data'] else '❌'}")
+            logger.info(f" 📈 Career Data: {'✅' if metrics['has_career_data'] else '❌'}")
+            logger.info(f" ⏱️ Generated: {metrics['generation_time']}")
             
         except Exception as e:
             logger.warning(f"Could not log metrics: {e}")
@@ -199,7 +229,7 @@ class ReportGenerator:
         """Send error notification"""
         try:
             error_msg = f"Report generation failed: {str(error)}"
-            self.email_sender.send_error_notification(error_msg, "PDF Report Generation Error")
+            self.email_sender.send_error_notification(error_msg, "Enhanced PDF Report Generation Error")
         except Exception as e:
             logger.error(f"Failed to send error notification: {e}")
 
@@ -208,7 +238,8 @@ def main():
     try:
         generator = ReportGenerator()
         generator.generate_report()
-        logger.info("🎉 Report generation completed successfully!")
+        logger.info("🎉 Enhanced report generation completed successfully!")
+        
     except Exception as e:
         logger.error(f"💥 Fatal error: {str(e)}")
         sys.exit(1)
