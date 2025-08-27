@@ -1,4 +1,4 @@
-name: 📊 Novi's Daily Intelligence Report (PDF Version)
+name: 📊 Novi's Enhanced Daily Intelligence Report (PDF Version)
 
 on:
   schedule:
@@ -14,7 +14,7 @@ on:
         type: boolean
 
 jobs:
-  generate-and-send-pdf-report:
+  generate-and-send-enhanced-pdf-report:
     runs-on: ubuntu-latest
     
     steps:
@@ -40,7 +40,7 @@ jobs:
           libfontconfig1-dev \
           libcairo2-dev \
           libgdk-pixbuf2.0-dev
-        
+          
     - name: 📧 Cache Python Dependencies
       uses: actions/cache@v3
       with:
@@ -58,9 +58,13 @@ jobs:
       run: |
         echo "🔍 Checking syntax of all Python files..."
         python -m py_compile src/data_collectors/jobs_collector.py
+        python -m py_compile src/data_collectors/stock_collector.py  
+        python -m py_compile src/data_collectors/sap_collector.py
+        python -m py_compile src/data_collectors/news_collector.py
         python -m py_compile src/utils/email_sender.py
         python -m py_compile src/utils/pdf_generator.py
         python -m py_compile src/report_generator.py
+        python -m py_compile config.py
         echo "✅ Syntax check passed for all files"
         
     - name: 🕐 Set Timezone to IST
@@ -68,10 +72,12 @@ jobs:
         sudo timedatectl set-timezone Asia/Kolkata
         echo "Current time: $(date)"
         
-    - name: 📁 Create Reports Directory
+    - name: 📁 Create Required Directories
       run: |
         mkdir -p reports
-        echo "✅ Reports directory created"
+        mkdir -p src/templates
+        mkdir -p logs
+        echo "✅ Directories created"
         
     - name: 🔧 Validate Configuration
       env:
@@ -87,7 +93,7 @@ jobs:
         if issues:
             print('❌ Configuration Issues:')
             for issue in issues:
-                print(f'   - {issue}')
+                print(f'  - {issue}')
             exit(1)
         else:
             print('✅ Email configuration validated successfully')
@@ -111,30 +117,31 @@ jobs:
             exit(1)
         "
         
-    - name: 📊 Generate and Send PDF Report
+    - name: 📊 Generate and Send Enhanced PDF Report
       env:
         EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
         EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
         EMAIL_TO: ${{ secrets.EMAIL_TO }}
       run: |
-        echo "🚀 Starting PDF report generation..."
+        echo "🚀 Starting Enhanced PDF report generation..."
         python src/report_generator.py
-        echo "📧 PDF report generation completed"
+        echo "📧 Enhanced PDF report generation completed"
         
-    - name: 📂 Archive PDF Report
+    - name: 📂 Archive Enhanced PDF Report
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: novi-intelligence-report-pdf
+        name: novi-enhanced-intelligence-report-pdf
         path: reports/*.pdf
         retention-days: 30
         
     - name: 📝 Log Completion
       if: success()
       run: |
-        echo "✅ PDF Report generated and sent successfully at $(date)"
-        echo "📊 Next report scheduled for tomorrow at 5:00 AM IST"
+        echo "✅ Enhanced PDF Report generated and sent successfully at $(date)"
+        echo "📊 Next report scheduled for tomorrow at 5:00 AM IST"  
         echo "📄 Report archived as GitHub Actions artifact"
+        echo "🔧 Includes: SAP jobs, AI transition jobs, enhanced stock analysis, AI insights"
         
     - name: 🚨 Handle Errors
       if: failure()
@@ -143,7 +150,7 @@ jobs:
         EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
         EMAIL_TO: ${{ secrets.EMAIL_TO }}
       run: |
-        echo "❌ PDF report generation failed"
+        echo "❌ Enhanced PDF report generation failed"
         echo "📧 Sending error notification..."
         python -c "
         import os
@@ -151,8 +158,8 @@ jobs:
         from src.utils.email_sender import EmailSender
         try:
             sender = EmailSender()
-            error_msg = 'GitHub Actions workflow failed during PDF generation. Check the Actions logs for details.'
-            sender.send_error_notification(error_msg, 'PDF Report Generation Failure')
+            error_msg = 'GitHub Actions workflow failed during Enhanced PDF generation. Check the Actions logs for details.'
+            sender.send_error_notification(error_msg, 'Enhanced PDF Report Generation Failure')
             print('📧 Error notification sent')
         except Exception as e:
             print(f'Failed to send error notification: {e}')
@@ -162,9 +169,10 @@ jobs:
       if: failure()
       uses: actions/upload-artifact@v4
       with:
-        name: failure-logs-pdf
+        name: failure-logs-enhanced-pdf
         path: |
           *.log
           /tmp/*.log
           reports/
+          logs/
         retention-days: 7
