@@ -18,7 +18,7 @@ class Config:
     # Report Settings
     EXCLUDE_DAYS = []  # Add days to exclude (0=Monday, 6=Sunday)
     
-    # Stock Exchange URLs for scraping
+    # Enhanced Stock Exchange URLs for scraping
     STOCK_SOURCES = {
         'nse': 'https://www.nseindia.com',
         'moneycontrol': 'https://www.moneycontrol.com',
@@ -26,14 +26,14 @@ class Config:
         'investing': 'https://in.investing.com'
     }
     
-    # Mutual Fund Sources
+    # Enhanced Mutual Fund Sources
     MUTUAL_FUND_SOURCES = {
         'valueresearch': 'https://www.valueresearchonline.com',
         'morningstar': 'https://www.morningstar.in',
         'moneycontrol_mf': 'https://www.moneycontrol.com/mutual-funds'
     }
     
-    # News Sources (RSS based - no API needed)
+    # Enhanced News Sources (RSS based - no API needed)
     NEWS_SOURCES = {
         'global': [
             'http://feeds.bbci.co.uk/news/rss.xml',
@@ -54,36 +54,51 @@ class Config:
         ]
     }
     
-    # Job Search URLs
+    # Enhanced Job Search URLs
     JOB_SOURCES = {
         'naukri': 'https://www.naukri.com',
         'linkedin': 'https://www.linkedin.com/jobs',
         'indeed': 'https://in.indeed.com',
-        'glassdoor': 'https://www.glassdoor.co.in'
+        'glassdoor': 'https://www.glassdoor.co.in',
+        'timesjobs': 'https://www.timesjobs.com',
+        'shine': 'https://www.shine.com'
     }
     
-    # Job Keywords for SAP roles
-    JOB_KEYWORDS = [
-        'SAP Finance Architect',
-        'SAP B2P Lead',
-        'SAP Workstream Lead',
-        'Program Lead SAP',
-        'SAP S/4HANA Finance',
-        'SAP FICO Consultant',
-        'SAP Program Manager',
-        'SAP Solution Architect'
-    ]
+    # Enhanced Job Keywords for SAP and AI roles
+    JOB_KEYWORDS = {
+        'sap': [
+            'SAP Finance Architect',
+            'SAP B2P Lead',
+            'SAP Workstream Lead',
+            'Program Lead SAP',
+            'SAP S/4HANA Finance',
+            'SAP FICO Consultant',
+            'SAP Program Manager',
+            'SAP Solution Architect',
+            'SAP HANA Cloud Finance',
+            'SAP Controlling AI'
+        ],
+        'ai_transition': [
+            'AI ML SAP background',
+            'Machine Learning SAP experience',
+            'Data Science SAP transition',
+            'AI Solutions Architect Enterprise',
+            'ML Engineer Financial Analytics',
+            'Data Scientist SAP Domain'
+        ]
+    }
     
-    # Web scraping settings
+    # Enhanced web scraping settings
     REQUEST_DELAY = 2  # Delay between requests in seconds
     MAX_RETRIES = 3
     REQUEST_TIMEOUT = 30
     
-    # User agents for web scraping
+    # Enhanced User agents for web scraping
     USER_AGENTS = [
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15',
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0'
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0',
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     ]
 
 # Get current IST time
