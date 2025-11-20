@@ -64,7 +64,7 @@ jobs:
         python -m py_compile src/utils/email_sender.py
         python -m py_compile src/utils/pdf_generator.py
         python -m py_compile src/report_generator.py
-        python -m py_compile config.py
+        python -m py_compile src/config.py
         echo "✅ Syntax check passed for all files"
         
     - name: 🕐 Set Timezone to IST
