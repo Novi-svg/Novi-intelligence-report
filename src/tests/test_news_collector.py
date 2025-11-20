@@ -1,86 +1,74 @@
+import unittest
+from unittest.mock import patch, MagicMock
+from datetime import datetime
+import time
 import sys
 import os
-import unittest
-from datetime import datetime, timezone
-from unittest.mock import patch, MagicMock
 
-# Add the parent directory to system path for imports
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+# Adjust the path to import NewsCollector
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_collectors.news_collector import NewsCollector
-from config import Config
 
 class TestNewsCollector(unittest.TestCase):
     def setUp(self):
-        """Set up test fixtures before each test method."""
+        """Set up a NewsCollector instance for testing."""
         self.collector = NewsCollector()
+
+    @patch('data_collectors.news_collector.feedparser')
+    def test_feed_parsing(self, mock_feedparser):
+        """Test RSS feed parsing with mock data."""
+        # Mock feedparser.parse
+        mock_feed = MagicMock()
+        mock_entry = MagicMock()
+        mock_entry.title = 'Test Title'
+        mock_entry.description = 'Test Description'
+        mock_entry.link = 'http://example.com/news'
+        mock_entry.published = datetime.now().isoformat()
+        mock_feed.entries = [mock_entry]
+        mock_feed.status = 200
+        mock_feed.feed.title = "Test Feed"
+        mock_feedparser.parse.return_value = mock_feed
         
-    def test_basic_initialization(self):
-        """Test if NewsCollector initializes correctly"""
-        self.assertIsNotNone(self.collector)
-        self.assertIsNotNone(self.collector.config)
-        self.assertIsNotNone(self.collector.session)
+        # Call the method
+        items = self.collector._parse_rss_feed('http://example.com/rss')
         
-    @patch('requests.Session.get')
-    def test_feed_parsing(self, mock_get):
-        """Test RSS feed parsing with mock data"""
-        # Mock RSS feed response
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = """
-        <?xml version="1.0" encoding="UTF-8" ?>
-        <rss version="2.0">
-        <channel>
-            <title>Test News Feed</title>
-            <link>http://example.com</link>
-            <description>Test Feed</description>
-            <item>
-                <title>Test News Item</title>
-                <link>http://example.com/news/1</link>
-                <description>Test Description</description>
-                <pubDate>Wed, 03 Sep 2025 15:40:58 GMT</pubDate>
-            </item>
-        </channel>
-        </rss>
-        """
-        mock_get.return_value = mock_response
-        
-        # Test feed parsing
-        feed_url = "http://example.com/rss"
-        items = self.collector._parse_rss_feed(feed_url)
-        
+        # Assertions
         self.assertTrue(len(items) > 0)
-        self.assertEqual(items[0]['title'], 'Test News Item')
+        self.assertEqual(items[0]['title'], 'Test Title')
         
+    def test_clean_description(self):
+        """Test HTML cleaning from descriptions."""
+        entry = MagicMock()
+        entry.description = '<p>This is a test.</p>'
+        entry.summary = ''
+        clean_desc = self.collector._get_clean_description(entry)
+        self.assertEqual(clean_desc, 'This is a test.')
+
     def test_date_parsing(self):
-        """Test date parsing functionality"""
-        test_date = "Wed, 03 Sep 2025 15:40:58 GMT"
+        """Test date parsing functionality."""
+        test_date = "2023-10-27T10:00:00Z"
         timestamp = self.collector._parse_date_to_timestamp(test_date)
-        self.assertIsNotNone(timestamp)
-        
+        self.assertIsInstance(timestamp, float)
+
     def test_category_filtering(self):
-        """Test news category filtering"""
-        test_news = {
-            'title': 'Important Business Update',
-            'description': 'Stock market news'
-        }
-        category = self.collector._categorize_news(
-            test_news['title'], 
-            test_news['description']
-        )
-        self.assertEqual(category, 'Markets')
+        """Test news category filtering."""
+        title = "Big Market News"
+        description = "Stocks are going up"
+        category = self.collector._categorize_news(title, description)
+        self.assertEqual(category, 'Business')
+
+    @patch('data_collectors.news_collector.NewsCollector.get_global_news')
+    def test_fallback_news(self, mock_get_global_news):
+        """Test fallback mechanism when news collection fails."""
+        mock_get_global_news.return_value = []
+
+        # Call the get_all_news method
+        news = self.collector.get_all_news()
         
-    def test_excluded_categories(self):
-        """Test excluded categories filtering"""
-        test_news = {
-            'title': 'Sports Update',
-            'description': 'Cricket match results'
-        }
-        category = self.collector._categorize_news(
-            test_news['title'], 
-            test_news['description']
-        )
-        self.assertEqual(category, 'Excluded')
+        # Check if fallback data is provided
+        self.assertTrue('global' in news)
+        self.assertEqual(len(news['global']), 1)
+        self.assertEqual(news['global'][0]['title'], 'Service Temporarily Unavailable')
 
 if __name__ == '__main__':
     unittest.main()

@@ -13,7 +13,7 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config import Config, get_ist_time, should_skip_today
+from src.config import Config, get_ist_time, should_skip_today
 from src.data_collectors.news_collector import NewsCollector
 from src.data_collectors.stock_collector import StockCollector
 from src.data_collectors.jobs_collector import JobsCollector

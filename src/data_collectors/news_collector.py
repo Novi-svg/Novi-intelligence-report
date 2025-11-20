@@ -84,7 +84,7 @@ class NewsCollector:
                 return items
 
             # Parse feed with timeout
-            feed = feedparser.parse(feed_url, timeout=10)
+            feed = feedparser.parse(feed_url)
             
             # Validate feed structure
             if not hasattr(feed, 'entries') or not feed.entries:
@@ -216,4 +216,59 @@ class NewsCollector:
             'regional': [fallback_item]
         }
 
-    # ... (rest of the methods remain the same but with improved error handling)
+    def _get_fallback_news(self, category: str) -> List[Dict[str, Any]]:
+        """Provide fallback for a single category."""
+        return self._get_fallback_news_data()[category]
+
+    def get_global_news(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Collect global news"""
+        return self._collect_news_for_category('global', limit)
+
+    def get_india_news(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Collect India news"""
+        return self._collect_news_for_category('india', limit)
+
+    def get_business_news(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Collect business news"""
+        return self._collect_news_for_category('business', limit)
+
+    def get_regional_news(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Collect regional news"""
+        return self._collect_news_for_category('regional', limit)
+
+    def _collect_news_for_category(self, category: str, limit: int) -> List[Dict[str, Any]]:
+        """Helper to collect news for a specific category"""
+        all_items = []
+        for url in self.config.NEWS_SOURCES.get(category, []):
+            all_items.extend(self._parse_rss_feed(url, limit))
+        # Sort by timestamp and return the top 'limit' items
+        all_items.sort(key=lambda x: x['published_timestamp'], reverse=True)
+        return all_items[:limit]
+
+    def _parse_date_to_timestamp(self, date_string: str) -> float:
+        """Parse date strings into timestamps, trying multiple formats."""
+        for fmt in self.config.DATE_FORMATS:
+            try:
+                dt = datetime.strptime(date_string, fmt)
+                return dt.timestamp()
+            except (ValueError, TypeError):
+                continue
+        # Fallback for unparseable dates
+        return datetime.now().timestamp()
+
+    def _categorize_news(self, title: str, description: str) -> str:
+        """Categorize news based on keywords."""
+        text = (title + ' ' + description).lower()
+        if any(keyword in text for keyword in ['market', 'stock', 'economy', 'business']):
+            return 'Business'
+        if any(keyword in text for keyword in ['politics', 'government']):
+            return 'Politics'
+        return 'General'
+
+    def _determine_source_name(self, feed_url: str, feed: Any) -> str:
+        """Determine the source name from the feed URL or feed data."""
+        if hasattr(feed, 'feed') and hasattr(feed.feed, 'title'):
+            return feed.feed.title
+        # Fallback to a simplified domain name
+        from urllib.parse import urlparse
+        return urlparse(feed_url).netloc.replace('www.', '').split('.')[0]
